@@ -1,1 +1,0 @@
-- [SimQN](https://github.com/ertuil/SimQN): SimQN is a discrete-event based network simulation platform for quantum networks. users can use SimQN to design routing algorithms for better QKD performance.
