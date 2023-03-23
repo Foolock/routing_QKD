@@ -1,8 +1,8 @@
 ## Problem Formulation
 
 ### Input:
-1. network size: N X N grid 
-2. network node: Alice Bob and n Trusted Nodes(TNs). 
+1. **network size**: N X N grid 
+2. **network node**: Alice Bob and n Trusted Nodes(TNs). 
    node attributes: 1. each node has 4 qubit memories   
                     2. each node has 3 distance: Da, Dt, Db
 3. network topology: 1. Locations of Alice, Bob and TNs
