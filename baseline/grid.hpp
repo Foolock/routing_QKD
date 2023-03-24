@@ -183,16 +183,16 @@ class Grid {
 
       display();
 
-      std::srand(time(NULL)); // seed the random number generator
-      double rand_num = ((double) rand() / RAND_MAX); // generate a random number between 0 and 1
-      for(int i=0; i<grid_size; i++) {
+     for(int i=0; i<grid_size; i++) {
         for(int j=0; j<grid_size; j++) {
           // to break the edge, I only traverse the right(direction = 2)
           // and the bottom(direction = 3) edges of each node, once the 
           // edge is broken, breakEdge() will break the other edge for 
           // that neighbor 
+          std::srand(time(NULL)); // seed the random number generator
           int curr_node = i * grid_size + j;
           for(int direction = 2; direction<4; direction++) {
+            double rand_num = ((double) rand() / RAND_MAX); // generate a random number between 0 and 1
             if(rand_num > P) {
               breakEdge(curr_node, direction); 
             }
