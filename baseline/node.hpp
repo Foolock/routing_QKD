@@ -1,21 +1,19 @@
-#include <utility>
+#include <vector>
 
 struct Node {
 
-  // node index
-  std::pair<int, int> index;
-  
-  // node role: 0 = Alice, 1 = Bob, 2 = TN, 3 = router 
-  int role;
+  // node role: 0 = router, 1 = Alice, 2 = Bob, 3 = TN 
+  // At default, a node is a router
+  int role = 0;
 
   // Distance to Alice, Bob and TN
-  int Da;
-  int Db;
-  int Dt;
+  int Da = 0;
+  int Db = 0;
+  int Dt = 0;
 
   // 4 qubit memory
-  Node* qubut_up;
-  Node* qubut_down;
-  Node* qubut_left;
-  Node* qubut_right;
+  Node* qubut_up = nullptr;
+  Node* qubut_down = nullptr;
+  Node* qubut_left = nullptr;
+  Node* qubut_right = nullptr;
 };
