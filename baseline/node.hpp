@@ -2,6 +2,9 @@
 
 struct Node {
 
+//  // Node Index
+//  std::vector<int> node_index = {0,0};
+
   // node role: 0 = router, 1 = Alice, 2 = Bob, 3 = TN 
   // At default, a node is a router
   int role = 0;

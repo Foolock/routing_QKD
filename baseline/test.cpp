@@ -8,6 +8,7 @@ int main() {
   size_t N = 5;
 
   Grid grid(T, N);
+  grid.display();
 
   return 0;
 }
