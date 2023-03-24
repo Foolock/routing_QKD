@@ -9,11 +9,7 @@ int main() {
   double P = 0.75;
 
   Grid grid(T, N, P);
-  grid.display();
-  
   grid.stage1();
-
-  grid.display();
 
   return 0;
 }

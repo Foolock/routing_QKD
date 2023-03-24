@@ -142,7 +142,10 @@ class Grid {
       // of neighbor is set to be -1, we need to get it first
       int neighbor = edges[curr][direction]; 
       edges[curr][direction] = -1;
-      edges[neighbor][3 - direction] = -1;
+      // if neighbor == -1, it means it has no neighbor at the beginning(side node)
+      if(neighbor != -1) {
+        edges[neighbor][3 - direction] = -1;
+      }
     }
 
     // display the node grid
@@ -177,6 +180,9 @@ class Grid {
     // stage 1: intialize inter link with a success rate = P
     // i.e., break edges with a rate = 1-P
     void stage1() {
+
+      display();
+
       std::srand(time(NULL)); // seed the random number generator
       double rand_num = ((double) rand() / RAND_MAX); // generate a random number between 0 and 1
       for(int i=0; i<grid_size; i++) {
@@ -193,6 +199,7 @@ class Grid {
           }
         }
       } 
+      display();
     }
 
   private: 
