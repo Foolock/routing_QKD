@@ -2,6 +2,8 @@
 #include <vector>
 #include <iostream>
 #include <cmath>
+#include <cstdlib>
+#include <ctime>
 
 class Grid {
   public:
@@ -11,9 +13,10 @@ class Grid {
      * Assume only one TN
      * TN_location: location of TN
      * N: size of the grid
+     * P: success rate of bell state transmission in fiber channel(edge)
      * return(void):  
      */
-    Grid(std::vector<int> TN_location, int N): grid_size(N) {
+    Grid(std::vector<int> TN_location, int N, double P): grid_size(N), P(P) {
     
       // create a temporary object to store node_grid
       std::vector<std::vector<Node>> temp_node_grid(grid_size, std::vector<Node>(grid_size));
@@ -113,16 +116,33 @@ class Grid {
       return result;
     }
 
-    // helper: add edge when initialize adjacent list edge
+    // helper: add edge when initialize adjacent list edges
     /*
-     * x: x index of node
-     * y: y index of node (neighbor of x)
-     * direction: y's direction from x: 0 = uppper, 1 = left, 2 = right, 3 = bottom
+     * curr: current node
+     * neighbor: neighbor node 
+     * direction: neighbor's direction from curr: 0 = uppper, 1 = left, 2 = right, 3 = bottom
      * return(void):
      */
-    void addEdge(int x, int y, int direction, std::vector<std::vector<int>>& temp_edges) {
-      temp_edges[x][direction] = y;
-      temp_edges[y][3 - direction] = x; // if y is upper of x, then x is bottom of y 
+    void addEdge(int curr, int neighbor, int direction, std::vector<std::vector<int>>& temp_edges) {
+      temp_edges[curr][direction] = neighbor;
+      temp_edges[neighbor][3 - direction] = curr; // if neighbor is upper of curr, 
+                                                            // then curr is bottom of neighbor 
+    }
+
+    // break edge: break edge in adjacent list edges
+    /*
+     * curr: current node
+     * direction: neighbor's direction from curr: 0 = uppper, 1 = left, 2 = right, 3 = bottom
+     * return(void): 
+     */
+    void breakEdge(int curr, int direction, std::vector<std::vector<int>>& edges) {
+      // to break a edge 
+      // we have to break it both for curr and neighbor
+      // so before the edge is broken, i.e., the index 
+      // of neighbor is set to be -1, we need to get it first
+      int neighbor = edges[curr][direction]; 
+      edges[curr][direction] = -1;
+      edges[neighbor][3 - direction] = -1;
     }
 
     // display the node grid
@@ -152,8 +172,27 @@ class Grid {
         }
         std::cout << "\n";
       }
+    }
 
-
+    // stage 1: intialize inter link with a success rate = P
+    // i.e., break edges with a rate = 1-P
+    void stage1() {
+      std::srand(time(NULL)); // seed the random number generator
+      double rand_num = ((double) rand() / RAND_MAX); // generate a random number between 0 and 1
+      for(int i=0; i<grid_size; i++) {
+        for(int j=0; j<grid_size; j++) {
+          // to break the edge, I only traverse the right(direction = 2)
+          // and the bottom(direction = 3) edges of each node, once the 
+          // edge is broken, breakEdge() will break the other edge for 
+          // that neighbor 
+          int curr_node = i * grid_size + j;
+          for(int direction = 2; direction<4; direction++) {
+            if(rand_num > P) {
+              breakEdge(curr_node, direction, edges); 
+            }
+          }
+        }
+      } 
     }
 
   private: 
@@ -169,6 +208,9 @@ class Grid {
     //         2nd dimension: adjacent node index in the order of upper, left, right, bottom 
     // all entries are initailzed = -1 to avoid conflict with the first node(index = 0)
     std::vector<std::vector<int>> edges;
+
+    // success rate of bell state transmission in fiber channel(edge)
+    double P;
 };
 
 

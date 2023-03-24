@@ -5,12 +5,13 @@
 int main() {
   
   std::vector<int> T = {2, 2};
-  size_t N = 5;
+  int N = 5;
+  double P = 0.75;
 
-  Grid grid(T, N);
+  Grid grid(T, N, P);
   grid.display();
 
-
+  grid.stage1();
   return 0;
 }
 
