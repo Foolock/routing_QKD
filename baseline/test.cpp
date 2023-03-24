@@ -10,8 +10,11 @@ int main() {
 
   Grid grid(T, N, P);
   grid.display();
-
+  
   grid.stage1();
+
+  grid.display();
+
   return 0;
 }
 

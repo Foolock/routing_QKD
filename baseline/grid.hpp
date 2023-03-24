@@ -135,7 +135,7 @@ class Grid {
      * direction: neighbor's direction from curr: 0 = uppper, 1 = left, 2 = right, 3 = bottom
      * return(void): 
      */
-    void breakEdge(int curr, int direction, std::vector<std::vector<int>>& edges) {
+    void breakEdge(int curr, int direction) {
       // to break a edge 
       // we have to break it both for curr and neighbor
       // so before the edge is broken, i.e., the index 
@@ -188,7 +188,7 @@ class Grid {
           int curr_node = i * grid_size + j;
           for(int direction = 2; direction<4; direction++) {
             if(rand_num > P) {
-              breakEdge(curr_node, direction, edges); 
+              breakEdge(curr_node, direction); 
             }
           }
         }
