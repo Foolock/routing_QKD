@@ -9,7 +9,13 @@ int main() {
   double P = 0.75;
 
   Grid grid(T, N, P);
+  std::cout << "before stage 1: \n";
+  grid.display();
+  std::cout << "after stage 1: \n";
   grid.stage1();
+  grid.display();
+
+
 
   return 0;
 }

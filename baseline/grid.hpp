@@ -164,14 +164,14 @@ class Grid {
         for(int j=0; j<grid_size; j++) {
           std::cout << node_grid[i][j].role;
           if(edges[i*grid_size+j][2] != -1) {std::cout << "--";}
-          else {std::cout << " ";}
+          else {std::cout << "  ";}
         }
         std::cout << "\n";
         // before it print next row of grid
         // check if current row node have some connect with next row
         for(int j=0; j<grid_size; j++) {
           if(edges[i*grid_size+j][3] != -1) {std::cout << "|  ";}
-          else {std::cout << " ";}
+          else {std::cout << "   ";}
         }
         std::cout << "\n";
       }
@@ -181,15 +181,14 @@ class Grid {
     // i.e., break edges with a rate = 1-P
     void stage1() {
 
-      display();
-
-     for(int i=0; i<grid_size; i++) {
+      std::srand(time(NULL)); // seed the random number generator
+      
+      for(int i=0; i<grid_size; i++) {
         for(int j=0; j<grid_size; j++) {
           // to break the edge, I only traverse the right(direction = 2)
           // and the bottom(direction = 3) edges of each node, once the 
           // edge is broken, breakEdge() will break the other edge for 
           // that neighbor 
-          std::srand(time(NULL)); // seed the random number generator
           int curr_node = i * grid_size + j;
           for(int direction = 2; direction<4; direction++) {
             double rand_num = ((double) rand() / RAND_MAX); // generate a random number between 0 and 1
@@ -199,7 +198,6 @@ class Grid {
           }
         }
       } 
-      display();
     }
 
   private: 
