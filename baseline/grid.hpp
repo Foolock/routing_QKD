@@ -17,11 +17,11 @@ class Grid {
     
       // create a temporary object to store node_grid
       std::vector<std::vector<Node>> temp_node_grid(grid_size, std::vector<Node>(grid_size));
-      
+
       // At default, Alice is placed at left bottom corner 
       // Bob is placed at right upper corner
-      std::vector<int> A_index = {N-1, 0};
-      std::vector<int> B_index = {0, N-1};
+      std::vector<int> A_index = {grid_size-1, 0};
+      std::vector<int> B_index = {0, grid_size-1};
       temp_node_grid[A_index[0]][A_index[1]].role = 1; 
       temp_node_grid[B_index[0]][B_index[1]].role = 2; 
 
@@ -42,7 +42,25 @@ class Grid {
 //        }
 //      }
 //
+      // assign temporary node grid to node grid
       node_grid = temp_node_grid;
+
+      // initialize edges: except for side node, each node is connected to its 
+      // upper, bottom, left and right neighbor
+      // create a temporary object to store edges
+      std::vector<std::vector<int>> temp_edges(grid_size*grid_size, std::vector<int>(4, -1));
+      for(int i=0; i<grid_size; i++) {
+        for(int j=0; j<grid_size; j++) {
+          int curr_node = i * grid_size + j;
+          // for a curr_node, add its neighbor's index to the 2nd dimension of edges[][]
+          if (i > 0) addEdge(curr_node, (i-1)*N + j, 0, temp_edges); // upper neighbor
+          if (j > 0) addEdge(curr_node, i*N + (j-1), 1, temp_edges); // left neighbor
+          if (j < N-1) addEdge(curr_node, i*N + (j+1), 2, temp_edges); // right neighbor
+          if (i < N-1) addEdge(curr_node, (i+1)*N + j, 3, temp_edges); // bottom neighbor
+        }
+      }
+      edges = temp_edges;
+
     }
 
     // calculate distance for each node to Alice, Bob, and TN and assign  
@@ -95,16 +113,47 @@ class Grid {
       return result;
     }
 
+    // helper: add edge when initialize adjacent list edge
+    /*
+     * x: x index of node
+     * y: y index of node (neighbor of x)
+     * direction: y's direction from x: 0 = uppper, 1 = left, 2 = right, 3 = bottom
+     * return(void):
+     */
+    void addEdge(int x, int y, int direction, std::vector<std::vector<int>>& temp_edges) {
+      temp_edges[x][direction] = y;
+      temp_edges[y][3 - direction] = x; // if y is upper of x, then x is bottom of y 
+    }
+
     // display the node grid
     void display() {
       
-      std::cout << "this is the current grid: \n\n";
+//      std::cout << "this is the current grid: \n\n";
+//      for(int i=0; i<grid_size; i++) {
+//        for(int j=0; j<grid_size; j++) {
+//          std::cout << node_grid[i][j].role << " ";
+//        }
+//        std::cout << "\n\n";
+//      }
+
+      std::cout << "this is the current grid(with edges): \n\n";
       for(int i=0; i<grid_size; i++) {
         for(int j=0; j<grid_size; j++) {
-          std::cout << node_grid[i][j].role << " ";
+          std::cout << node_grid[i][j].role;
+          if(edges[i*grid_size+j][2] != -1) {std::cout << "--";}
+          else {std::cout << " ";}
         }
-        std::cout << "\n\n";
-      } 
+        std::cout << "\n";
+        // before it print next row of grid
+        // check if current row node have some connect with next row
+        for(int j=0; j<grid_size; j++) {
+          if(edges[i*grid_size+j][3] != -1) {std::cout << "|  ";}
+          else {std::cout << " ";}
+        }
+        std::cout << "\n";
+      }
+
+
     }
 
   private: 
@@ -114,6 +163,12 @@ class Grid {
     // grid size
     int grid_size;
 
+    // adjacent list to represent edges in the grid
+    // format: edges[grid_size*grid_size][4]
+    //         1st dimension: node index
+    //         2nd dimension: adjacent node index in the order of upper, left, right, bottom 
+    // all entries are initailzed = -1 to avoid conflict with the first node(index = 0)
+    std::vector<std::vector<int>> edges;
 };
 
 
