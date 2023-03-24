@@ -21,5 +21,9 @@
 - Shortest Path: Always find the shortest path when creating path between any Ti, Tj ∈ {T0, ...,Tn+1}
 - Limited Qubit Memory: A qubit memory can only be used once in a round, which means two different path cannot rely on a single qubit and after each round, the qubit memories in the node will be reset. (No disjoint path).
 
-## Program Description
-- Class 
+## Progress
+- stage1() finish
+
+
+## Problem 
+- Is adjacent list the best way to represent the edges here?
