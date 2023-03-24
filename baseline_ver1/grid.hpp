@@ -16,23 +16,20 @@ class Grid {
      * P: success rate of bell state transmission in fiber channel(edge)
      * return(void):  
      */
-    Grid(std::vector<int> TN_location, int N, double P): grid_size(N), P(P) {
+    Grid(std::vector<int> TN_location, int N, double P): grid_size(N), A_index{grid_size-1, 0}, 
+      B_index{0, grid_size-1}, T_index(TN_location), P(P) {
     
       // create a temporary object to store node_grid
       std::vector<std::vector<Node>> temp_node_grid(grid_size, std::vector<Node>(grid_size));
 
-      // At default, Alice is placed at left bottom corner 
-      // Bob is placed at right upper corner
-      std::vector<int> A_index = {grid_size-1, 0};
-      std::vector<int> B_index = {0, grid_size-1};
       temp_node_grid[A_index[0]][A_index[1]].role = 1; 
       temp_node_grid[B_index[0]][B_index[1]].role = 2; 
 
       // initialize TN location 
-      temp_node_grid[TN_location[0]][TN_location[1]].role = 3; 
+      temp_node_grid[T_index[0]][T_index[1]].role = 3; 
 
       // initialize distance to Alice, Bob and TN for each node
-      calDistanceToABT(A_index, B_index, TN_location, temp_node_grid);
+      calDistanceToABT(temp_node_grid);
      
       // check if distance results are correct
 //      std::vector<int> result;
@@ -74,9 +71,6 @@ class Grid {
      * return(void): 
      */
     void calDistanceToABT(
-      std::vector<int> A_index, 
-      std::vector<int> B_index, 
-      std::vector<int> T_index,
       std::vector<std::vector<Node>>& temp_node_grid
     ) {
       int Da;
@@ -200,12 +194,42 @@ class Grid {
       } 
     }
 
+    // stage 2 global routing: continueously traverse the grid to add shortest paths to SS
+    void stage2_global() {
+      int Dat = std::abs(A_index[0] - T_index[0]) + std::abs(A_index[1] - T_index[1]);
+      int Dab = std::abs(A_index[0] - B_index[0]) + std::abs(A_index[1] - B_index[1]);
+      int Dtb = std::abs(T_index[0] - B_index[0]) + std::abs(T_index[1] - B_index[1]);
+      
+      // get the shortest distances among A, B, T, if equal, randomly choose on
+      int shortest_distanceABT = std::min(std::min(Dat, Dab), Dtb);
+      if(shortest_distanceABT == Dat) {
+        // try to form a path between A and T
+
+      }
+      else if(shortest_distanceABT == Dtb) {
+        // try to form a path between T and B
+
+      }
+      else { //shortest_distanceABT == Dab
+        // try to form a path between A and B
+
+      }
+
+    }
+
   private: 
     // node grid
     std::vector<std::vector<Node>> node_grid;
     
     // grid size
     int grid_size;
+
+    // location of A, B, T
+    // At default, Alice is placed at left bottom corner 
+    // Bob is placed at right upper corner
+    std::vector<int> A_index = {grid_size-1, 0};
+    std::vector<int> B_index = {0, grid_size-1};
+    std::vector<int> T_index;
 
     // adjacent list to represent edges in the grid
     // format: edges[grid_size*grid_size][4]
@@ -216,6 +240,20 @@ class Grid {
 
     // success rate of bell state transmission in fiber channel(edge)
     double P;
+
+    // raw key pool (implemented as counter)
+    int RKab = 0;
+    int RKat = 0;
+    int RKtb = 0;
+
+    // shared state buffer 
+    // SSab means a shared state buffer between Alice and Bob
+    // An entry in SS stores the length of a path
+    // e.g., SSab[0] = 8, the first path between Alice and Bob has a length of 8
+    std::vector<int> SSab;
+    std::vector<int> SSat;
+    std::vector<int> SStb;
+  
 };
 
 
