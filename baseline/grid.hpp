@@ -96,9 +96,22 @@ class Grid {
      */
     std::vector<int> int2coordinate(int node_index);
 
-    // stage 1: intialize inter link with a success rate = P
-    // i.e., break edges with a rate = 1-P
+    /**
+     * @brief: stage 1: intialize inter link with a success rate = P
+     *  i.e., break edges with a rate = 1-P
+     */
     void stage1();
+
+    /**
+     * @brief: stage 2: (global routing) create intra link with a success rate = R
+     * according to the node grid from stage 1
+     *
+     * global routing search for shortest path for each pair A->B, A->T, T->B
+     * then construct the intra link along that path. then record it to SS. then delete it
+     * 
+     * it will keep traversing path until there is no path available between all user.
+     */
+    void stage2_global();
 
   private:
     // node grid
@@ -323,5 +336,36 @@ void Grid::stage1() {
     }
   } 
 }
+
+/**
+ * @brief: stage 2: (global routing) create intra link with a success rate = R
+ * according to the node grid from stage 1
+ *
+ * global routing search for shortest path for each pair A->B, A->T, T->B
+ * then construct the intra link along that path. then record it to SS. then delete it
+ * 
+ * it will keep traversing path until there is no path available between all user.
+ */
+void Grid::stage2_global() {
+ 
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
