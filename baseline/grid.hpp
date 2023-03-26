@@ -121,10 +121,32 @@ class Grid {
      */
     void stage2_global();
 
+    /**
+     * @brief(need more case test): helper: bfs, traverse the current node_grid_per_round. Find available path between s, t
+     * https://www.geeksforgeeks.org/print-paths-given-source-destination-using-bfs/
+     *
+     * input:
+     *  s, t: index(integer) of source and sink node. i.e., role of node. (1 = Alice, 3=TN, 2=Bob)
+     * 
+     */
     std::vector<std::vector<int>> bfs(int s, int t);
-  
+ 
+    /**
+     * @brief: helper: check if a node is in the path vector
+     *
+     * input:
+     *  x: node index(integer)
+     *  path: a path vector
+     * return(bool):
+     *  true: when x is in the path 
+     *  false: when x is not presented in the path
+     */
     bool isInPath(int x, std::vector<int> path);
  
+    /**
+     * @brief: reset edges_per_round[] and node_grid_per_round[] as its original copy
+     *
+     */
     void reset();
 
 //  private:
@@ -355,15 +377,7 @@ void Grid::stage1() {
   } 
 }
 
-/**
- * @brief: stage 2: (global routing) create intra link with a success rate = R
- * according to the node grid from stage 1
- *
- * global routing search for shortest path for each pair A->B, A->T, T->B
- * then construct the intra link along that path. then record it to SS. then delete it
- * 
- * it will keep traversing path until there is no path available between all user.
- */
+// @brief: stage 2: (global routing) create intra link with a success rate = R
 void Grid::stage2_global() {
   
   /*
@@ -476,14 +490,7 @@ void Grid::stage2_global() {
 
 }
 
-/**
- * @brief(need more case test): helper: bfs, traverse the current node_grid_per_round. Find available path between s, t
- * https://www.geeksforgeeks.org/print-paths-given-source-destination-using-bfs/
- *
- * input:
- *  s, t: index(integer) of source and sink node. i.e., role of node. (1 = Alice, 3=TN, 2=Bob)
- * 
- */
+// @brief(need more case test): helper: bfs, traverse the current node_grid_per_round. Find available path between s, t
 std::vector<std::vector<int>> Grid::bfs(int s, int t) {
 
   // helper 
@@ -548,16 +555,7 @@ std::vector<std::vector<int>> Grid::bfs(int s, int t) {
 
 }
 
-/**
- * @brief: helper: check if a node is in the path vector
- *
- * input:
- *  x: node index(integer)
- *  path: a path vector
- * return(bool):
- *  true: when x is in the path 
- *  false: when x is not presented in the path
- */
+// @brief: helper: check if a node is in the path vector
 bool Grid::isInPath(int x, std::vector<int> path)
 {
   // x may be -1 for a non-existing adjacent node
@@ -571,10 +569,7 @@ bool Grid::isInPath(int x, std::vector<int> path)
   return false;
 }
 
-/**
- * @brief: reset edges_per_round[] and node_grid_per_round[] as its original copy
- *
- */
+// @brief: reset edges_per_round[] and node_grid_per_round[] as its original copy
 void Grid::reset() {
   edges_per_round = edges;
   node_grid_per_round = node_grid;
