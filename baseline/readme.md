@@ -10,3 +10,4 @@
 
 - Bug fixed.
 - Issue still exists. For "random choosing", I am always choose the 1st shortest path I get. So if paths bewteen A, T are the first to enter path pool, they have a high chance to get constructed.
+- In a result, because A is placed at left-bottom corner, its upper and right edge will be used to construct the paths bewteen A, T first. So it is impossible to have a path between A, B.
