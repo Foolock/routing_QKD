@@ -19,6 +19,13 @@ int main() {
 
   grid.stage2_global();
 
+  std::cout << "check SS : \n";
+  std::cout << "SSab: ";
+  for(auto& p : grid.SSab) {
+    std::cout << p << " ";
+  }
+  std::cout << "\n";
+
   return 0;
 }
 

@@ -125,7 +125,7 @@ class Grid {
   
     bool isInPath(int x, std::vector<int> path);
   
-  private:
+//  private:
     // node grid
     // format: node_grid_per_round[row][col] stands for the node in row-1 row and col-1 col
     std::vector<std::vector<Node>> node_grid; // original node_grid
@@ -389,31 +389,68 @@ void Grid::stage2_global() {
   global_paths.insert(global_paths.end(), paths_at.begin(), paths_at.end());
   global_paths.insert(global_paths.end(), paths_tb.begin(), paths_tb.end());
 
-  // get the shortest path in global_paths 
-  std::vector<int> shortest = global_paths[0];
-  int min_length = global_paths[0].size();
-  for (int i = 1; i < global_paths.size(); i++) {
-    if (global_paths[i].size() < min_length) {
-        min_length = global_paths[i].size();
-        shortest = global_paths[i];
+  /*
+   * second, recurrsively find the shortest path and delete it from the grid
+   * by marking them as visited until there is no available path
+   */
+  while(global_paths.size()) {
+
+    // print size of global paths
+    std::cout << "the size of global paths = " << global_paths.size() << "\n";
+
+    // get the shortest path in global_paths 
+    std::vector<int> shortest = global_paths[0];
+    int shortest_index = 0;
+    int min_length = global_paths[0].size();
+    for (int i = 1; i < global_paths.size(); i++) {
+      if (global_paths[i].size() < min_length) {
+          min_length = global_paths[i].size();
+          shortest = global_paths[i];
+          shortest_index = i;
+        }
     }
+
+    // mark the edges_per_round along the shortest path visited
+    // the path stores node's index(integer), so we need to find the edge first
+    for(int i=0; i<shortest.size() - 1; i++) {
+      // edges_per_round[shortest[i]][direction].visited = true
+      // we have shortest[i], what is the direction?
+      // it is the one when edges_per_round[shortest[i]][direction].to = shortest[i+1] 
+      for(int j=0; j<4; j++) { // 0 <= direction <= 3
+        if(edges_per_round[shortest[i]][j].to == shortest[i+1]) {
+//          if(edges_per_round[shortest[i]][j].visited == true) {goto next_shortest;}; // if this path has visited edges
+//                                                                                     // i.e., we have disjoint paths
+//                                                                                     // skip it
+          edges_per_round[shortest[i]][j].visited = true;
+          edges_per_round[shortest[i+1]][3-j].visited = true; // we need to mark for its neighbor too
+        }  
+      }
+    } 
+
+    // print this path before we erase it
+    std::cout << "found shortest path: \n";
+    for(int i=0; i<shortest.size(); i++) {
+      std::cout << shortest[i] << " -- ";    
+    }
+    std::cout << "\n\n";
+
+    // put shortest path into the corresponding SS before we erase it
+    if(shortest[0] == A_index[0]*grid_size+A_index[1] &&
+        shortest[shortest.size()-1] == B_index[0]*grid_size+B_index[1]) {SSab.push_back(shortest.size());}
+    else if(shortest[0] == A_index[0]*grid_size+A_index[1] &&
+        shortest[shortest.size()-1] == T_index[0]*grid_size+T_index[1]) {SSat.push_back(shortest.size());}
+    else if(shortest[0] == T_index[0]*grid_size+T_index[1] &&
+        shortest[shortest.size()-1] == B_index[0]*grid_size+B_index[1]) {SStb.push_back(shortest.size());}
+    else {
+      std::cerr << "stage 2 error: shortest path source and sink incorrect.\n";
+      std::cerr << "source :" << shortest[0] << " sink: " << shortest[shortest.size()-1] << "\n";
+      std::exit(EXIT_FAILURE);
+    }
+
+  next_shortest:
+    // delete this path from global path
+    global_paths.erase(global_paths.begin() + shortest_index);
   }
-
-
-  // mark the edges_per_round along the shortest path visited
-  // the path stores node's index(integer), so we need to find the edge first
-  for(int i=0; i<shortest.size() - 1; i++) {
-    // edges_per_round[shortest[i]][direction].visited = true
-    // we have shortest[i], what is the direction?
-    // it is the one when edges_per_round[shortest[i]][direction].to = shortest[i+1] 
-    for(int j=0; j<4; j++) { // 0 <= direction <= 3
-      if(edges_per_round[shortest[i]][j].to == shortest[i+1]) {
-        edges_per_round[shortest[i]][j].visited = true;
-        edges_per_round[shortest[i+1]][3-j].visited = true; // we need to mark for its neighbor too
-      }  
-    }
-  }  
-
 
 
 }
@@ -452,7 +489,7 @@ std::vector<std::vector<int>> Grid::bfs(int s, int t) {
 
 
     auto it = std::min_element(std::begin(result), std::end(result), min_size);
-    if(result.size()) { // it is nullptr at the beginning cuz nothing in result
+    if(result.size()) { // "it" is nullptr at the beginning cuz nothing in result
       if(path.size() > it->size()) { // if the path is already longer than the result we have
                                      // no need to continue the loop
         continue;
