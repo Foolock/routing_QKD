@@ -20,7 +20,7 @@ struct Edge {
 
   // used in stage 2 global routing 
   // if an edge is visited, visited = true 
-  bool visited;
+  bool visited = false;
 };
 
 // @brief: Grid class including operations in stage 1 to stage 5
@@ -124,7 +124,9 @@ class Grid {
     std::vector<std::vector<int>> bfs(int s, int t);
   
     bool isInPath(int x, std::vector<int> path);
-  
+ 
+    void reset();
+
 //  private:
     // node grid
     // format: node_grid_per_round[row][col] stands for the node in row-1 row and col-1 col
@@ -215,6 +217,7 @@ Grid::Grid(std::vector<int> TN_location, int N, double P):
   node_grid_per_round = temp_node_grid;
   node_grid = node_grid_per_round;
   edges_per_round = temp_edges;
+  edges = edges_per_round;
 }
 
 // @brief: calculate distance for each node to Alice, Bob, and TN and assign  
@@ -393,6 +396,7 @@ void Grid::stage2_global() {
    * second, recurrsively find the shortest path and delete it from the grid
    * by marking them as visited until there is no available path
    */
+  int iteration = 0;
   while(global_paths.size()) {
 
     // get the shortest path in global_paths 
@@ -407,6 +411,28 @@ void Grid::stage2_global() {
         }
     }
 
+    // before we mark edges_per_round along the shortest path visited
+    // we need to traverse the shortest path to see if there is any edge 
+    // already marked as visited(in the last iteration)
+    for(int i=0; i<shortest.size(); i++) {
+      for(int j=0; j<4; j++) { // 0 <= direction <= 3
+        if(edges_per_round[shortest[i]][j].to == shortest[i+1]) {
+        if(edges_per_round[shortest[i]][j].visited == true) {
+          // if this path has visited edges
+          // i.e., we have disjoint paths
+          // skip it
+//          std::cout << "found joint path: \n";
+//          std::cout << "curr: " << shortest[i] << " next: " << edges_per_round[shortest[i]][j].to << "\n";
+//          for(int i=0; i<shortest.size(); i++) {
+//            std::cout << shortest[i] << " -- ";
+//          }
+//          std::cout << "\n\n";
+          goto next_shortest;
+        }
+        }
+      }
+    }
+
     // mark the edges_per_round along the shortest path visited
     // the path stores node's index(integer), so we need to find the edge first
     for(int i=0; i<shortest.size() - 1; i++) {
@@ -415,13 +441,6 @@ void Grid::stage2_global() {
       // it is the one when edges_per_round[shortest[i]][direction].to = shortest[i+1] 
       for(int j=0; j<4; j++) { // 0 <= direction <= 3
         if(edges_per_round[shortest[i]][j].to == shortest[i+1]) {
-          if(edges_per_round[shortest[i]][j].visited == true) {
-            // if this path has visited edges
-            // i.e., we have disjoint paths
-            // skip it
-            goto next_shortest;
-          }           
-
           edges_per_round[shortest[i]][j].visited = true;
           edges_per_round[shortest[i+1]][3-j].visited = true; // we need to mark for its neighbor too
         }  
@@ -451,6 +470,7 @@ void Grid::stage2_global() {
   next_shortest:
     // delete this path from global path
     global_paths.erase(global_paths.begin() + shortest_index);
+    iteration ++;
   }
 
 
@@ -551,7 +571,14 @@ bool Grid::isInPath(int x, std::vector<int> path)
   return false;
 }
 
-
+/**
+ * @brief: reset edges_per_round[] and node_grid_per_round[] as its original copy
+ *
+ */
+void Grid::reset() {
+  edges_per_round = edges;
+  node_grid_per_round = node_grid;
+} 
 
 
 
