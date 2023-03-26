@@ -395,9 +395,6 @@ void Grid::stage2_global() {
    */
   while(global_paths.size()) {
 
-    // print size of global paths
-    std::cout << "the size of global paths = " << global_paths.size() << "\n";
-
     // get the shortest path in global_paths 
     std::vector<int> shortest = global_paths[0];
     int shortest_index = 0;
@@ -418,9 +415,13 @@ void Grid::stage2_global() {
       // it is the one when edges_per_round[shortest[i]][direction].to = shortest[i+1] 
       for(int j=0; j<4; j++) { // 0 <= direction <= 3
         if(edges_per_round[shortest[i]][j].to == shortest[i+1]) {
-//          if(edges_per_round[shortest[i]][j].visited == true) {goto next_shortest;}; // if this path has visited edges
-//                                                                                     // i.e., we have disjoint paths
-//                                                                                     // skip it
+          if(edges_per_round[shortest[i]][j].visited == true) {
+            // if this path has visited edges
+            // i.e., we have disjoint paths
+            // skip it
+            goto next_shortest;
+          }           
+
           edges_per_round[shortest[i]][j].visited = true;
           edges_per_round[shortest[i+1]][3-j].visited = true; // we need to mark for its neighbor too
         }  
