@@ -17,6 +17,8 @@ int main() {
   std::cout << "after stage 1: \n";
   grid.display();
 
+  grid.stage2_global();
+
   return 0;
 }
 

@@ -4,6 +4,10 @@
 #include <cmath>
 #include <cstdlib>
 #include <ctime>
+#include <cstring>
+#include <queue>
+#include <iomanip>
+#include <algorithm>
 
 // @brief: inter edge 
 struct Edge {
@@ -113,8 +117,13 @@ class Grid {
      */
     void stage2_global();
 
+    std::vector<std::vector<int>> bfs(int s, int t);
+  
+    bool isInPath(int x, std::vector<int> path);
+  
   private:
     // node grid
+    // format: node_grid[row][col] stands for the node in row-1 row and col-1 col
     std::vector<std::vector<Node>> node_grid;
 
     // grid size
@@ -129,8 +138,8 @@ class Grid {
 
     // adjacent list to represent edges in the grid
     // format: edges[grid_size*grid_size][4]
-    //         1st dimension: node index
-    //         2nd dimension: adjacent node index in the order of upper, left, right, bottom
+    //         1st dimension: node index (integer format)
+    //         2nd dimension: Edge.to = adjacent node index(integer format) in the order of upper, left, right, bottom
     // all entries are initailzed = -1 to avoid conflict with the first node(index = 0)
     std::vector<std::vector<Edge>> edges;
 
@@ -247,7 +256,6 @@ void Grid::display() {
 //    std::cout << "\n\n";
 //  }
 //
-
   std::cout << "this is the current grid(with edges): \n\n";
   for(int i=0; i<grid_size; i++) {
     for(int j=0; j<grid_size; j++) {
@@ -347,10 +355,117 @@ void Grid::stage1() {
  * it will keep traversing path until there is no path available between all user.
  */
 void Grid::stage2_global() {
- 
+  
+  // construct a sub graph among A, B, T
+  // by finding all the path available 
+  
+  // check if bfs can find the path 
+  int s = A_index[0]*grid_size + A_index[1];
+  int t = B_index[0]*grid_size + B_index[1];
+
+  std::vector<std::vector<int>> paths = bfs(s,t);
+
+  for(int i=0; i<paths.size(); i++) {
+    std::cout << i+1 << " path: \n";
+    for(int j=0; j<paths[i].size(); j++) {
+      std::cout << paths[i][j] << " -- "; 
+    }
+    std::cout << "\n";
+  }
 }
 
+/**
+ * @brief: helper: bfs, traverse the current node_grid. Find available path between s, t
+ * https://www.geeksforgeeks.org/print-paths-given-source-destination-using-bfs/
+ *
+ * input:
+ *  s, t: index(integer) of source and sink node. i.e., role of node. (1 = Alice, 3=TN, 2=Bob)
+ * 
+ */
+std::vector<std::vector<int>> Grid::bfs(int s, int t) {
 
+  // helper 
+  auto min_size = []( const auto &v1, const auto &v2 )
+  {
+      return std::size( v1 ) < std::size( v2 );
+  };
+
+  // a result vector to store the path we found
+  // result[i] = a path found
+  std::vector<std::vector<int>> result;
+
+  // create a queue for bfs
+  // which stores the paths
+  std::queue<std::vector<int>> q;
+
+  // path vector to store the current path
+  std::vector<int> path;
+  path.push_back(s);
+  q.push(path);
+  while(!q.empty()) {
+    path = q.front();
+    q.pop();
+
+
+    auto it = std::min_element(std::begin(result), std::end(result), min_size);
+    if(result.size()) { // it is nullptr at the beginning cuz nothing in result
+      if(path.size() > it->size()) {
+        continue;
+      }
+    } 
+
+    int last = path[path.size() - 1];
+    
+    // if last vertex is the desired destination 
+    // then store this path to our result path vector 
+    if(last == t) {
+      result.push_back(path);
+    }
+
+    // traverse to all the nodes connected to current node
+    // if adjacent node is not visited, 
+    // create a new path by copying the current path
+    // and add this adjacent node into the new path
+    // and push the new path to queue
+    for(int i=0; i<edges[last].size(); i++) { // edges[last] = 4 cuz 4 neighbor(but some entries may be -1)
+      std::vector<int> coordinate = int2coordinate(edges[last][i].to); 
+      if(node_grid[coordinate[0]][coordinate[1]].role == 0 || edges[last][i].to == t) { // if this index is some other
+                                                                                       // TN or user node, skip
+        if(!isInPath(edges[last][i].to, path)) {
+          std::vector<int> newpath = path;
+          newpath.push_back(edges[last][i].to);
+          q.push(newpath);
+        }
+      }
+    }
+  }
+  
+  return result; 
+
+}
+
+/**
+ * @brief: helper: check if a node is in the path vector
+ *
+ * input:
+ *  x: node index(integer)
+ *  path: a path vector
+ * return(bool):
+ *  true: when x is in the path 
+ *  false: when x is not presented in the path
+ */
+bool Grid::isInPath(int x, std::vector<int> path)
+{
+  // x may be -1 for a non-existing adjacent node
+  if(x != -1) {
+    for(int i=0; i<path.size(); i++) {
+      if(path[i] == x) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
 
 
 
