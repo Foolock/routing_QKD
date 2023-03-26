@@ -1,5 +1,12 @@
-### problem 3.25
+### progress 3/25/11:00PM
 
-- There is an issue(bug) in stage2() where we are finding shortest paths among A, B, T. Because A and T, T and B are closer to A and B, so paths between A, T and T, B will be constructed first, making it less possible for constructing paths between A, B. 
+- There are bugs in stage2() global. Path witih all unvisited edges are still skipped.
+
+- There is an issue in stage2() where we are finding shortest paths among A, B, T. Because A and T, T and B are closer to A and B, so paths between A, T and T, B will be constructed first, making it less possible for constructing paths between A, B. 
 
 - Also, when there is a tie in shortest path, we need to "randomly" select one, where I am always choosing paths between A, T because paths between A, T is the first to enter global path pool. 
+
+### progress 3/25/11:08PM
+
+- Bug fixed.
+- Issue still exists. For "random choosing", I am always choose the 1st shortest path I get. So if paths bewteen A, T are the first to enter path pool, they have a high chance to get constructed.
