@@ -390,17 +390,32 @@ void Grid::stage2_global() {
   global_paths.insert(global_paths.end(), paths_tb.begin(), paths_tb.end());
 
   // get the shortest path in global_paths 
-  auto min_size = []( const auto &v1, const auto &v2 )
-  {
-      return std::size( v1 ) < std::size( v2 );
-  };
-  auto shortest_path = std::min_element(std::begin(global_paths), std::end(global_paths), min_size);
-  
+  std::vector<int> shortest = global_paths[0];
+  int min_length = global_paths[0].size();
+  for (int i = 1; i < global_paths.size(); i++) {
+    if (global_paths[i].size() < min_length) {
+        min_length = global_paths[i].size();
+        shortest = global_paths[i];
+    }
+  }
+
+
   // mark the edges_per_round along the shortest path visited
   // the path stores node's index(integer), so we need to find the edge first
-  for(auto& node : *shortest_path) {
-     
-  }   
+  for(int i=0; i<shortest.size() - 1; i++) {
+    // edges_per_round[shortest[i]][direction].visited = true
+    // we have shortest[i], what is the direction?
+    // it is the one when edges_per_round[shortest[i]][direction].to = shortest[i+1] 
+    for(int j=0; j<4; j++) { // 0 <= direction <= 3
+      if(edges_per_round[shortest[i]][j].to == shortest[i+1]) {
+        edges_per_round[shortest[i]][j].visited = true;
+        edges_per_round[shortest[i+1]][3-j].visited = true; // we need to mark for its neighbor too
+      }  
+    }
+  }  
+
+
+
 }
 
 /**
@@ -459,8 +474,9 @@ std::vector<std::vector<int>> Grid::bfs(int s, int t) {
     // and push the new path to queue
     for(int i=0; i<edges_per_round[last].size(); i++) { // edges_per_round[last] = 4 cuz 4 neighbor(but some entries may be -1)
       std::vector<int> coordinate = int2coordinate(edges_per_round[last][i].to); 
-      if(node_grid_per_round[coordinate[0]][coordinate[1]].role == 0 || edges_per_round[last][i].to == t) { // if this index is some other
-                                                                                       // TN or user node, skip
+      if(node_grid_per_round[coordinate[0]][coordinate[1]].role == 0 || edges_per_round[last][i].to == t) { 
+        // if this index is some other
+        // TN or user node, skip
         if(!isInPath(edges_per_round[last][i].to, path)) {
           std::vector<int> newpath = path;
           newpath.push_back(edges_per_round[last][i].to);
