@@ -2,8 +2,8 @@
 
 struct Qubit {
 
-  // if taken = true, qubit is tasken
-  bool taken = false;
+  // if a qubit is connected with an inter link, available = true
+  bool available = false;
 
   // the index of qubit this qubit is linked to
   int to = -1;
@@ -24,7 +24,7 @@ struct Node {
 
   // 4 qubit memory
   // 0 = uppper, 1 = left, 2 = right, 3 = bottom
-  std::vector<Qubit> qubits = std::vector<Qubit>(5);
+  std::vector<Qubit> qubits = std::vector<Qubit>(4);
 
   // a vector of 4 direction
   // when direction[i] = true

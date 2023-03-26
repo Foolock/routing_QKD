@@ -149,6 +149,14 @@ class Grid {
      */
     void reset();
 
+    void stage2_local_IA(); 
+
+    int numTakenQubits(int x, int y); 
+
+    void addIntraEdge(int x, int y, int q1, int q2); 
+
+    std::vector<int> find2qubits_IA(int curr_r, int curr_c, std::vector<int> available_q);
+
 //  private:
     // node grid
     // format: node_grid_per_round[row][col] stands for the node in row-1 row and col-1 col
@@ -324,6 +332,11 @@ void Grid::addEdge(
   // also update direction info for nodes in temp_node_grid 
   temp_node_grid[cur_row][cur_col].direction[direction] = true;
   temp_node_grid[neighbor_row][neighbor_col].direction[3-direction] = true;
+
+  // also update qubits info for nodes in temp_node_grid
+  temp_node_grid[cur_row][cur_col].qubits[direction].available = true;
+  temp_node_grid[neighbor_row][neighbor_col].qubits[3-direction].available = true;
+
 }
 
 
@@ -336,14 +349,18 @@ void Grid::breakEdge(int curr_row, int curr_col, int direction) {
   // of neighbor is set to be -1, we need to get it first
   int neighbor = edges_per_round[curr_row * grid_size + curr_col][direction].to;
   if(neighbor != -1) {
-  // if neighbor == -1, it means it has no neighbor at the beginning(side node) 
-  edges_per_round[curr_row * grid_size + curr_col][direction].to = -1;
-  edges_per_round[neighbor][3 - direction].to = -1;
+    // if neighbor == -1, it means it has no neighbor at the beginning(side node) 
+    edges_per_round[curr_row * grid_size + curr_col][direction].to = -1;
+    edges_per_round[neighbor][3 - direction].to = -1;
 
-  // also we need to update the direction info of nodes in node_grid_per_round 
-  std::vector<int> neighbor_coordinate = int2coordinate(neighbor);
-  node_grid_per_round[curr_row][curr_col].direction[direction] = false;
-  node_grid_per_round[neighbor_coordinate[0]][neighbor_coordinate[1]].direction[3-direction] = false;
+    // also we need to update the direction info of nodes in node_grid_per_round 
+    std::vector<int> neighbor_coordinate = int2coordinate(neighbor);
+    node_grid_per_round[curr_row][curr_col].direction[direction] = false;
+    node_grid_per_round[neighbor_coordinate[0]][neighbor_coordinate[1]].direction[3-direction] = false;
+    
+    // also we need to update the qubits info for nodes in node_grid_per_round
+    node_grid_per_round[curr_row][curr_col].qubits[direction].available = false;
+    node_grid_per_round[neighbor_coordinate[0]][neighbor_coordinate[1]].qubits[3-direction].available = false;
   }
 }
 
@@ -575,12 +592,144 @@ void Grid::reset() {
   node_grid_per_round = node_grid;
 } 
 
+/**
+ * @brief: stage 2: (local routing: IA algorithm) create intra link with a success rate = R
+ * according to the node grid from stage 1
+ * 
+ * IA local routing traverse the node_grid to check their qubits
+ * if only 1 qubits available, does nothing 
+ * if 2 qubits available, connect this 2 qubits
+ * if 3 qubits available, connect 2 qubits with IA (compare Dab, Dat, Dtb for 2 options, connect the 2 qubits 
+ * with the min D among {Dab, Dat, Dtb for option 1 and Dab, Dat, Dtb for option 2}, IA means when there 
+ * is tie, prefer vertical or horizontal intra link
+ * if 4 qubits available, connect the 2 qubits first with IA, then connect the rest 2 
+ */
+void Grid::stage2_local_IA() {
+  
+  /*
+   * first, we need to traverse the graph and calculate how many qubits are available for each node
+   */
+  
+  // create a vector to store which qubits are available in qubits of the node
+  std::vector<int> available_q;
 
+  for(int row=0; row<grid_size; row++) {
+    for(int col=0; col<grid_size; col++) {
+      // for each node in the node_grid
 
+      // empty available qubits vector first(it may have result from last itertaion
+      available_q.clear();
 
+      // traverse the qubits of node get available qubits
+      for(int i=0; i<4; i++) {
+        if(node_grid_per_round[row][col].qubits[i].available) {
+          available_q.push_back(i);
+        }
+      }
 
+      // if num == 2, connect the 2 available qubits 
+      if(available_q.size() == 2) {
+        // connect intra link between these 2 qubits
+        addIntraEdge(row, col, available_q[0], available_q[1]);
+      }
+      // if num == 3, connect the 2 qubits with min D
+      else if(available_q.size() == 3) {
+               
+      
 
+      }
+    
 
+    }
+  }
+}
+
+/**
+ * @brief: helper: calculate how many qubits are available for each node
+ *
+ * input:
+ *  x, y: index(coordinate) of a node in the node grid
+ *
+ * return(int):
+ *  result: the number of qubits that are available for a node 
+ *
+ */
+int Grid::numTakenQubits(int x, int y) {
+
+  int result = 0;
+  for(int i=0; i<4; i++) {
+    if(node_grid_per_round[x][y].qubits[i].available) {
+      result ++; 
+    }
+  }
+
+  return result;
+
+}
+
+/**
+ * @brief: add intra link 
+ * 
+ * input:
+ *  x, y: index(coordinate) of a node in the node grid
+ *  q1, q2: index of 2 qubits to construct intra link.
+ *  0 = uppper, 1 = left, 2 = right, 3 = bottom
+ */
+void Grid::addIntraEdge(int x, int y, int q1, int q2) {
+  
+  node_grid_per_round[x][y].qubits[q1].to = q2;
+  node_grid_per_round[x][y].qubits[q2].to = q1;
+
+}
+
+/**
+ * @brief: IA algorithm
+ *
+ * input:
+ *  curr_r, curr_c: index of current node
+ *  available_q: a vector storing the index of available qubits in qubits of each node
+ *  this index should be the same as the index of direction (!= -1) in directions of each node
+ *  so we can find neighbor node index through edges_per_round[curr][direction].to 
+ *  with this available_q 
+ *
+ * return:
+ *  2 qubit index indicating which 2 qubits to connect as intra link
+ *
+ */
+std::vector<int> Grid::find2qubits_IA(int curr_r, int curr_c, std::vector<int> available_q) {
+ 
+  std::vector<int> result;
+ 
+  if(available_q.size() == 3) {
+    // get the index(integer) of current node 
+    int curr = curr_r*grid_size + curr_c; 
+    
+    // get the index(integer) of the 3 neighbor with inter link
+    int neighbor1 = edges_per_round[curr][available_q[0]].to;  
+    int neighbor2 = edges_per_round[curr][available_q[1]].to;  
+    int neighbor3 = edges_per_round[curr][available_q[2]].to;  
+   
+    // transform neighbors' index from integer to coordinate
+    std::vector<int> neighbor1_coor = int2coordinate(neighbor1);
+    std::vector<int> neighbor2_coor = int2coordinate(neighbor2);
+    std::vector<int> neighbor3_coor = int2coordinate(neighbor3);
+
+    // get Dab, Dat, Dtb for each pair of these neighbors
+    // get Dab, Dat, Dtb for neighbor 1 and neighbor 2
+//    int Dab12 = 
+
+  }
+  else if(available_q.size() == 4) {
+
+  }
+  else {
+    std::cerr << "available q size incorrect, can't handle size <3 or >4\n";
+    std::exit(EXIT_FAILURE);
+  }
+  
+  return result;
+
+}
 
 
 
