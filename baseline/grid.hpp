@@ -17,6 +17,10 @@ struct Edge {
   /*
    * inter edge is implemented in this way in case I need to add some properties later
    */
+
+  // used in stage 2 global routing 
+  // if an edge is visited, visited = true 
+  bool visited;
 };
 
 // @brief: Grid class including operations in stage 1 to stage 5
@@ -32,7 +36,7 @@ class Grid {
      *  N: size of the grid
      *  P: success rate of bell state transmission in fiber channel(edge)
      * return(void): 
-     *  initialize grid_size, node_grid, A_index, B_index, C_index, edges(inter edge adjacent list)
+     *  initialize grid_size, node_grid_per_round, A_index, B_index, C_index, edges_per_round(inter edge adjacent list)
      *  and P(success rate of fiber channel transmission
      */
     Grid(std::vector<int> TN_location, int N, double P);
@@ -63,14 +67,14 @@ class Grid {
     void display();
 
     /** 
-     * @brief: helper: add edge when initialize adjacent list edges
+     * @brief: helper: add edge when initialize adjacent list edges_per_round
      *
      * input:
      *  curr_row, curr_col: current node's row and col index
      *  neighbor_row, neighbor_col: neighbor node's row and col index 
      *  direction: neighbor's direction from curr: 0 = uppper, 1 = left, 2 = right, 3 = bottom
      * return(void):
-     *  added edges are stored in temp_edges, also node that are connected with edges are updated(its direction vector)
+     *  added edges_per_round are stored in temp_edges, also node that are connected with edges_per_round are updated(its direction vector)
      *  in the temp_node_grid
      */
     void addEdge(
@@ -81,12 +85,12 @@ class Grid {
       std::vector<std::vector<Edge>>& temp_edges);
 
     /**
-     * @brief: break edge: break edge in adjacent list edges
+     * @brief: break edge: break edge in adjacent list edges_per_round
      *
      * curr_row, curr_col: index of current node
      * direction: neighbor's direction from curr: 0 = uppper, 1 = left, 2 = right, 3 = bottom
      * return(void): 
-     *  change direction in edges to -1 for broken nodes, change direction of nodes in node_grid to false
+     *  change direction in edges_per_round to -1 for broken nodes, change direction of nodes in node_grid_per_round to false
      */
     void breakEdge(int curr_row, int curr_col, int direction);
 
@@ -102,7 +106,7 @@ class Grid {
 
     /**
      * @brief: stage 1: intialize inter link with a success rate = P
-     *  i.e., break edges with a rate = 1-P
+     *  i.e., break edges_per_round with a rate = 1-P
      */
     void stage1();
 
@@ -123,8 +127,9 @@ class Grid {
   
   private:
     // node grid
-    // format: node_grid[row][col] stands for the node in row-1 row and col-1 col
-    std::vector<std::vector<Node>> node_grid;
+    // format: node_grid_per_round[row][col] stands for the node in row-1 row and col-1 col
+    std::vector<std::vector<Node>> node_grid; // original node_grid
+    std::vector<std::vector<Node>> node_grid_per_round; // node_grid copy per round
 
     // grid size
     int grid_size;
@@ -136,12 +141,13 @@ class Grid {
     std::vector<int> B_index = {0, grid_size-1};
     std::vector<int> T_index;
 
-    // adjacent list to represent edges in the grid
-    // format: edges[grid_size*grid_size][4]
+    // adjacent list to represent edges_per_round in the grid
+    // format: edges_per_round[grid_size*grid_size][4]
     //         1st dimension: node index (integer format)
     //         2nd dimension: Edge.to = adjacent node index(integer format) in the order of upper, left, right, bottom
     // all entries are initailzed = -1 to avoid conflict with the first node(index = 0)
-    std::vector<std::vector<Edge>> edges;
+    std::vector<std::vector<Edge>> edges; // original initialized edges
+    std::vector<std::vector<Edge>> edges_per_round; // edges copy per round
 
     // success rate of bell state transmission in fiber channel(edge)
     double P;
@@ -169,7 +175,7 @@ Grid::Grid(std::vector<int> TN_location, int N, double P):
   T_index(TN_location), 
   P(P) 
 {
-  // create a temporary object to store node_grid
+  // create a temporary object to store node_grid_per_round
   std::vector<std::vector<Node>> temp_node_grid(grid_size, std::vector<Node>(grid_size));      
 
   // place A, B, T in graph
@@ -191,13 +197,13 @@ Grid::Grid(std::vector<int> TN_location, int N, double P):
 //    }
 //  }
 
-  // initialize edges: except for side node, each node is connected to its 
+  // initialize edges_per_round: except for side node, each node is connected to its 
   // upper, bottom, left and right neighbor
-  // create a temporary object to store edges
+  // create a temporary object to store edges_per_round
   std::vector<std::vector<Edge>> temp_edges(grid_size*grid_size, std::vector<Edge>(4));
   for(int row=0; row<grid_size; row++) {
     for(int col=0; col<grid_size; col++) {
-      // for a curr_node, add its neighbor's index to the 2nd dimension of edges[][]
+      // for a curr_node, add its neighbor's index to the 2nd dimension of edges_per_round[][]
       if (row > 0) addEdge(row, col, (row-1), col, 0, temp_node_grid, temp_edges); // upper neighbor
       if (col > 0) addEdge(row, col, row, (col-1), 1, temp_node_grid, temp_edges); // left neighbor
       if (col < N-1) addEdge(row, col, row, (col+1), 2, temp_node_grid, temp_edges); // right neighbor
@@ -205,9 +211,10 @@ Grid::Grid(std::vector<int> TN_location, int N, double P):
     }
   }
 
-  // assign temporary objects to node_grid and edges
-  node_grid = temp_node_grid;
-  edges = temp_edges;
+  // assign temporary objects to node_grid_per_round and edges_per_round
+  node_grid_per_round = temp_node_grid;
+  node_grid = node_grid_per_round;
+  edges_per_round = temp_edges;
 }
 
 // @brief: calculate distance for each node to Alice, Bob, and TN and assign  
@@ -251,23 +258,23 @@ void Grid::display() {
 //  std::cout << "this is the current grid: \n\n";
 //  for(int i=0; i<grid_size; i++) {
 //    for(int j=0; j<grid_size; j++) {
-//      std::cout << node_grid[i][j].role << " ";
+//      std::cout << node_grid_per_round[i][j].role << " ";
 //    }
 //    std::cout << "\n\n";
 //  }
 //
-  std::cout << "this is the current grid(with edges): \n\n";
+  std::cout << "this is the current grid(with edges_per_round): \n\n";
   for(int i=0; i<grid_size; i++) {
     for(int j=0; j<grid_size; j++) {
-      std::cout << node_grid[i][j].role;
-      if(node_grid[i][j].direction[2]) {std::cout << "--";}
+      std::cout << node_grid_per_round[i][j].role;
+      if(node_grid_per_round[i][j].direction[2]) {std::cout << "--";}
       else {std::cout << "  ";}
     }
     std::cout << "\n";
     // before it print next row of grid
     // check if current row node have some connect with next row
     for(int j=0; j<grid_size; j++) {
-      if(node_grid[i][j].direction[3]) {std::cout << "|  ";}
+      if(node_grid_per_round[i][j].direction[3]) {std::cout << "|  ";}
       else {std::cout << "   ";}
     }
     std::cout << "\n";
@@ -276,7 +283,7 @@ void Grid::display() {
 }
 
 
-// @brief: helper: add edge when initialize adjacent list edges
+// @brief: helper: add edge when initialize adjacent list edges_per_round
 void Grid::addEdge(
   int cur_row, int cur_col,
   int neighbor_row, int neighbor_col,
@@ -295,23 +302,23 @@ void Grid::addEdge(
 }
 
 
-// @brief: break edge: break edge in adjacent list edges
+// @brief: break edge: break edge in adjacent list edges_per_round
 void Grid::breakEdge(int curr_row, int curr_col, int direction) {
   
   // to break a edge 
   // we have to break it both for curr and neighbor
   // so before the edge is broken, i.e., the index 
   // of neighbor is set to be -1, we need to get it first
-  int neighbor = edges[curr_row * grid_size + curr_col][direction].to;
+  int neighbor = edges_per_round[curr_row * grid_size + curr_col][direction].to;
   if(neighbor != -1) {
   // if neighbor == -1, it means it has no neighbor at the beginning(side node) 
-  edges[curr_row * grid_size + curr_col][direction].to = -1;
-  edges[neighbor][3 - direction].to = -1;
+  edges_per_round[curr_row * grid_size + curr_col][direction].to = -1;
+  edges_per_round[neighbor][3 - direction].to = -1;
 
-  // also we need to update the direction info of nodes in node_grid 
+  // also we need to update the direction info of nodes in node_grid_per_round 
   std::vector<int> neighbor_coordinate = int2coordinate(neighbor);
-  node_grid[curr_row][curr_col].direction[direction] = false;
-  node_grid[neighbor_coordinate[0]][neighbor_coordinate[1]].direction[3-direction] = false;
+  node_grid_per_round[curr_row][curr_col].direction[direction] = false;
+  node_grid_per_round[neighbor_coordinate[0]][neighbor_coordinate[1]].direction[3-direction] = false;
   }
 }
 
@@ -324,7 +331,7 @@ std::vector<int> Grid::int2coordinate(int node_index) {
 }
 
 // @brief: stage 1: intialize inter link with a success rate = P
-// i.e., break edges with a rate = 1-P
+// i.e., break edges_per_round with a rate = 1-P
 void Grid::stage1() {
 
   std::srand(time(NULL)); // seed the random number generator
@@ -332,7 +339,7 @@ void Grid::stage1() {
   for(int row=0; row<grid_size; row++) {
     for(int col=0; col<grid_size; col++) {
       // to break the edge, I only traverse the right(direction = 2)
-      // and the bottom(direction = 3) edges of each node, once the 
+      // and the bottom(direction = 3) edges_per_round of each node, once the 
       // edge is broken, breakEdge() will break the other edge for 
       // that neighbor 
       for(int direction = 2; direction<4; direction++) {
@@ -356,26 +363,48 @@ void Grid::stage1() {
  */
 void Grid::stage2_global() {
   
-  // construct a sub graph among A, B, T
-  // by finding all the path available 
-  
-  // check if bfs can find the path 
+  /*
+   * first, we need to find the shortest path (in hops) between any pair of nodes in {Alice, Bob and TN}  
+   */
+
+  // get available paths from A to B and put it into path pool ab, paths_ab may be null  
   int s = A_index[0]*grid_size + A_index[1];
   int t = B_index[0]*grid_size + B_index[1];
+  std::vector<std::vector<int>> paths_ab = bfs(s,t);
 
-  std::vector<std::vector<int>> paths = bfs(s,t);
+  // get available paths from A to T and put it into path pool at, paths_at may be null   
+  s = A_index[0]*grid_size + A_index[1];
+  t = T_index[0]*grid_size + T_index[1];
+  std::vector<std::vector<int>> paths_at = bfs(s,t);
 
-  for(int i=0; i<paths.size(); i++) {
-    std::cout << i+1 << " path: \n";
-    for(int j=0; j<paths[i].size(); j++) {
-      std::cout << paths[i][j] << " -- "; 
-    }
-    std::cout << "\n";
-  }
+  // get available paths from T to B and put it into path pool tb, paths_tb may be null
+  s = T_index[0]*grid_size + T_index[1];
+  t = B_index[0]*grid_size + B_index[1];
+  std::vector<std::vector<int>> paths_tb = bfs(s,t);
+
+  // create our path pool for global routing
+  std::vector<std::vector<int>> global_paths;
+  global_paths.reserve(paths_ab.size() + paths_at.size() + paths_tb.size());
+  global_paths.insert(global_paths.end(), paths_ab.begin(), paths_ab.end());
+  global_paths.insert(global_paths.end(), paths_at.begin(), paths_at.end());
+  global_paths.insert(global_paths.end(), paths_tb.begin(), paths_tb.end());
+
+  // get the shortest path in global_paths 
+  auto min_size = []( const auto &v1, const auto &v2 )
+  {
+      return std::size( v1 ) < std::size( v2 );
+  };
+  auto shortest_path = std::min_element(std::begin(global_paths), std::end(global_paths), min_size);
+  
+  // mark the edges_per_round along the shortest path visited
+  // the path stores node's index(integer), so we need to find the edge first
+  for(auto& node : *shortest_path) {
+     
+  }   
 }
 
 /**
- * @brief: helper: bfs, traverse the current node_grid. Find available path between s, t
+ * @brief(need more case test): helper: bfs, traverse the current node_grid_per_round. Find available path between s, t
  * https://www.geeksforgeeks.org/print-paths-given-source-destination-using-bfs/
  *
  * input:
@@ -409,7 +438,8 @@ std::vector<std::vector<int>> Grid::bfs(int s, int t) {
 
     auto it = std::min_element(std::begin(result), std::end(result), min_size);
     if(result.size()) { // it is nullptr at the beginning cuz nothing in result
-      if(path.size() > it->size()) {
+      if(path.size() > it->size()) { // if the path is already longer than the result we have
+                                     // no need to continue the loop
         continue;
       }
     } 
@@ -427,13 +457,13 @@ std::vector<std::vector<int>> Grid::bfs(int s, int t) {
     // create a new path by copying the current path
     // and add this adjacent node into the new path
     // and push the new path to queue
-    for(int i=0; i<edges[last].size(); i++) { // edges[last] = 4 cuz 4 neighbor(but some entries may be -1)
-      std::vector<int> coordinate = int2coordinate(edges[last][i].to); 
-      if(node_grid[coordinate[0]][coordinate[1]].role == 0 || edges[last][i].to == t) { // if this index is some other
+    for(int i=0; i<edges_per_round[last].size(); i++) { // edges_per_round[last] = 4 cuz 4 neighbor(but some entries may be -1)
+      std::vector<int> coordinate = int2coordinate(edges_per_round[last][i].to); 
+      if(node_grid_per_round[coordinate[0]][coordinate[1]].role == 0 || edges_per_round[last][i].to == t) { // if this index is some other
                                                                                        // TN or user node, skip
-        if(!isInPath(edges[last][i].to, path)) {
+        if(!isInPath(edges_per_round[last][i].to, path)) {
           std::vector<int> newpath = path;
-          newpath.push_back(edges[last][i].to);
+          newpath.push_back(edges_per_round[last][i].to);
           q.push(newpath);
         }
       }
