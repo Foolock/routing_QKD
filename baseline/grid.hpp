@@ -801,17 +801,25 @@ std::vector<int> Grid::find2qubits_IA(int curr_r, int curr_c, std::vector<int> a
     }
   }
 
-  int minRow = minIndex[0][0];
-  int minCol = minIndex[0][1];
-  if(minIndex.size() == 1) {
+  // create a temporary result cuz there may be ties
+  std::vector<std::vector<int>> temp_result;
+  for(int i=0; i<minIndex.size(); i++) {
+    // the idea of my IA implementation here is to get a set of temp results
+    // traverse this result set, select the first pair that can make vertical
+    // or horizontal intra link, i.e., their qubit index add up as 3
+    // cuz: 0 = uppper, 1 = left, 2 = right, 3 = bottom
+
+    minRow = minIndex[i][0];
+    minCol = minIndex[i][1];
+
     if(num_neighbor == 3) {
       // the following mapping is based on {01, 02, 10, 12, 20, 21} 
-      if(minRow == 0) {result[0] = neighbor[0]; result[1] = neighbor[1];}
-      else if(minRow == 1) {result[0] = neighbor[0]; result[1] = neighbor[2];}
-      else if(minRow == 2) {result[0] = neighbor[1]; result[1] = neighbor[0];}
-      else if(minRow == 3) {result[0] = neighbor[1]; result[1] = neighbor[2];}
-      else if(minRow == 4) {result[0] = neighbor[2]; result[1] = neighbor[0];}
-      else if(minRow == 5) {result[0] = neighbor[2]; result[1] = neighbor[1];}
+      if(minRow == 0) {temp_result.push_back({neighbor[0], neighbor[1]});}
+      else if(minRow == 1) {temp_result.push_back({neighbor[0], neighbor[2]});}
+      else if(minRow == 2) {temp_result.push_back({neighbor[1], neighbor[0]});}
+      else if(minRow == 3) {temp_result.push_back({neighbor[1], neighbor[2]});}
+      else if(minRow == 4) {temp_result.push_back({neighbor[2], neighbor[0]});}
+      else if(minRow == 5) {temp_result.push_back({neighbor[2], neighbor[1]});}
       else {
         std::cerr << "error: cannot find neighbor nodes to connect with minRow.\n";
         std::exit(EXIT_FAILURE);
@@ -819,45 +827,54 @@ std::vector<int> Grid::find2qubits_IA(int curr_r, int curr_c, std::vector<int> a
     }
     else if(num_neighbor == 4) {
       // the following mapping is based on {01, 02, 03, 10, 12, 13, 20, 21, 23, 30, 31, 32} 
-      if(minRow == 0) {result[0] = neighbor[0]; result[1] = neighbor[1];}
-      else if(minRow == 1) {result[0] = neighbor[0]; result[1] = neighbor[2];}
-      else if(minRow == 2) {result[0] = neighbor[0]; result[1] = neighbor[3];}
-      else if(minRow == 3) {result[0] = neighbor[1]; result[1] = neighbor[0];}
-      else if(minRow == 4) {result[0] = neighbor[1]; result[1] = neighbor[2];}
-      else if(minRow == 5) {result[0] = neighbor[1]; result[1] = neighbor[3];} 
-      else if(minRow == 6) {result[0] = neighbor[2]; result[1] = neighbor[0];} 
-      else if(minRow == 7) {result[0] = neighbor[2]; result[1] = neighbor[1];} 
-      else if(minRow == 8) {result[0] = neighbor[2]; result[1] = neighbor[3];} 
-      else if(minRow == 9) {result[0] = neighbor[3]; result[1] = neighbor[0];} 
-      else if(minRow == 10) {result[0] = neighbor[3]; result[1] = neighbor[1];} 
-      else if(minRow == 11) {result[0] = neighbor[3]; result[1] = neighbor[2];} 
+      if(minRow == 0) {temp_result.push_back({neighbor[0], neighbor[1]});}
+      else if(minRow == 1) {temp_result.push_back({neighbor[0], neighbor[2]});}
+      else if(minRow == 2) {temp_result.push_back({neighbor[0], neighbor[3]});}
+      else if(minRow == 3) {temp_result.push_back({neighbor[1], neighbor[0]});}
+      else if(minRow == 4) {temp_result.push_back({neighbor[1], neighbor[2]});}
+      else if(minRow == 5) {temp_result.push_back({neighbor[1], neighbor[3]});}
+      else if(minRow == 6) {temp_result.push_back({neighbor[2], neighbor[0]});}
+      else if(minRow == 7) {temp_result.push_back({neighbor[2], neighbor[1]});}
+      else if(minRow == 8) {temp_result.push_back({neighbor[2], neighbor[3]});}
+      else if(minRow == 9) {temp_result.push_back({neighbor[3], neighbor[0]});}
+      else if(minRow == 10) {temp_result.push_back({neighbor[3], neighbor[1]});}
+      else if(minRow == 11) {temp_result.push_back({neighbor[3], neighbor[2]});}
       else {
         std::cerr << "error: cannot find neighbor nodes to connect with minRow.\n";
         std::exit(EXIT_FAILURE);
       }
     }
   }
-//  else {
-//    // when there is ties
-//    // create a temporary result
-//    std::vector<std::vector<int>> temp_result;
-//    if(num_neighbor == 3) {
-//    // it means there is 
-//    }
-//  }
 
-  // now result stores 2 indices of the 2 neighbor nodes to construct intra link
+  // now temp_result[i] stores 2 indices of the 2 neighbor nodes to construct intra link
   // we need to transfer it to 2 indices of the 2 qubits of current node to construct intra link
   // traverse the neighbor of current nodes, if find that 2 neighbor, then get the direction and 
   // get the qubit index in that direction
-  for(int direction=0; direction<4; direction++) {
-    if(edges_per_round[curr][direction].to == result[0]) {
-      result[0] = direction;
-    } 
-    else if(edges_per_round[curr][direction].to == result[1]) {
-      result[1] = direction;
+  for(int i=0; i<temp_result.size(); i++) {
+
+    for(int direction=0; direction<4; direction++) {
+      if(edges_per_round[curr][direction].to == temp_result[i][0]) {
+        temp_result[i][0] = direction;
+      } 
+      else if(edges_per_round[curr][direction].to == temp_result[i][1]) {
+        temp_result[i][1] = direction;
+      }
+    }
+
+  }
+
+  // now get the first pair in temp_result that can make vertical or horizontal link
+  for(int i=0; i<temp_result.size(); i++) {
+    // if the qubit index add up to 3, then it is vertical or horizontal
+    if(temp_result[i][0] + temp_result[i][1] == 3) {
+      result = temp_result[i];
+    }
+    // notice that there may not be vertical or horizontal link sometimes, then just select the last one
+    else {
+      result = temp_result[i];
     }
   }
+
 
   // check if result is legit
   for(int i=0; i<result.size(); i++) {
