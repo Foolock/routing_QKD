@@ -269,9 +269,7 @@ void Grid::calDistanceToABT(
       Dt = std::abs(T_index[0] - i) + std::abs(T_index[1] - j);
 
       // assign distance to the corresponding node
-      temp_node_grid[i][j].Da = Da;
-      temp_node_grid[i][j].Db = Db;
-      temp_node_grid[i][j].Dt = Dt;
+      temp_node_grid[i][j].D = {Da, Db, Dt};
     }
   }
 }
@@ -279,9 +277,7 @@ void Grid::calDistanceToABT(
 // @brief: helper: check if Da, Db, Dt is calculated correctly 
 std::vector<int> Grid::getDistanceToABT(int x, int y, std::vector<std::vector<Node>> temp_node_grid) {
   std::vector<int> result(3); // result = {Da, Db, Dt}
-  result[0] = temp_node_grid[x][y].Da;
-  result[1] = temp_node_grid[x][y].Db;
-  result[2] = temp_node_grid[x][y].Dt;
+  result = temp_node_grid[x][y].D;
   return result;
 }
 
@@ -699,24 +695,91 @@ void Grid::addIntraEdge(int x, int y, int q1, int q2) {
 std::vector<int> Grid::find2qubits_IA(int curr_r, int curr_c, std::vector<int> available_q) {
  
   std::vector<int> result;
- 
-  if(available_q.size() == 3) {
+  
+  // a vector to store the index(integer) of neighbor
+  std::vector<int> neighbor;
+
+  // a vector to store the index(coordinate) of neighbor
+  std::vector<std::vector<int>> neighbor_coor;
+
+  // a 2-D vector to store Dab, Dat, Dtb of each pair of 3~4 neighbors
+  /* 
+   * first dimension: stores D between {01, 02, 03, 10, 12, 13, 20, 21, 23, 30, 31, 32},
+   * 01 means every Dab, Dat, Dtb combinations(totally 12) between neighbor 0 and neighbor 1
+   *
+   * second dimension: a vector to store Dab, Dat, Dtb of 2 neighbors(there should be 12 combinations,
+   * as Dab12 may not be equal to Dab21
+   * 
+   * this vector is initialized with all entries = -1 for testing
+   */
+  std::vector<std::vector<int>> D(12, std::vector<int>(12, -1));
+
+  // temp result for D calculation
+  int temp_D;
+
+  // number of neighbors
+  int num_neighbor = available_q.size();
+  
+  if(num_neighbor == 3) {
+    
+    // when there are 3 neighbors, the first dimension of 2-d vector D only has
+    // 6 entris: {01, 02, 10, 12, 20, 21}, so remove half of its first dimension,
+    // same for second dimension
+    D.erase(D.begin(), D.begin() + D.size()/2);
+    for(int i=0; i<D.size(); i++) {
+      D[i].erase(D[i].begin(), D[i].begin() + D[i].size()/2);
+    }
+
     // get the index(integer) of current node 
     int curr = curr_r*grid_size + curr_c; 
     
     // get the index(integer) of the 3 neighbor with inter link
-    int neighbor1 = edges_per_round[curr][available_q[0]].to;  
-    int neighbor2 = edges_per_round[curr][available_q[1]].to;  
-    int neighbor3 = edges_per_round[curr][available_q[2]].to;  
-   
-    // transform neighbors' index from integer to coordinate
-    std::vector<int> neighbor1_coor = int2coordinate(neighbor1);
-    std::vector<int> neighbor2_coor = int2coordinate(neighbor2);
-    std::vector<int> neighbor3_coor = int2coordinate(neighbor3);
+    for(int i=0; i<num_neighbor; i++) {
+      neighbor.push_back(edges_per_round[curr][available_q[i]].to);
+    }
 
-    // get Dab, Dat, Dtb for each pair of these neighbors
-    // get Dab, Dat, Dtb for neighbor 1 and neighbor 2
-//    int Dab12 = 
+    // transform neighbors' index from integer to coordinate
+    for(int i=0; i<num_neighbor; i++) {
+      neighbor_coor.push_back(int2coordinate(neighbor[i]));
+    }
+
+    // calculate Dab, Dat, Dtb and add them to the corresponding location of D
+    int m = 0; // first dimension of D
+    int n = 0; // second dimension of D
+    for(int i=0; i<num_neighbor; i++) {
+      for(int j=0; j<num_neighbor; j++) {
+        if(j != i) {
+          n = 0;
+          // calculate all Dab, Dat, Dtb between neighbor i and neighbor j
+          for(int k1=0; k1<3; k1++) { // k1 means D[k1] = {Da, Db, Dt}
+            for(int k2=0; k2<3; k2++) { // k2 means D[k2] = {Da, Db, Dt}
+              if(k2 != k1) {
+                // e.g. when i=0, j=1, k1=0, k2 = 1, it is calculating Dab01
+
+                // calculate Dab, Dat, Dtb, 
+                temp_D = node_grid_per_round[neighbor_coor[i][0]][neighbor_coor[i][1]].D[k1] + 
+                           node_grid_per_round[neighbor_coor[j][0]][neighbor_coor[j][1]].D[k2];
+             
+                // put it to corresponding location of first dimension of D 
+                D[m][n] = temp_D;
+                n ++;
+              }
+            }
+          }
+          m ++; 
+        }        
+      }
+    }
+
+    // traverse D to make sure it is correct (by checking if there is any -1)
+    for(int i=0; i<D.size(); i++) {
+      for(int j=0; j<D[i].size(); j++) {
+        if(D[i][j] == -1) {
+          std::cerr << "error: Dab, Dat, Dtb calculation mistakes!\n";
+          std::exit(EXIT_FAILURE);
+        }
+      }
+    }
 
   }
   else if(available_q.size() == 4) {

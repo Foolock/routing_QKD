@@ -18,9 +18,8 @@ struct Node {
   int role = 0;
 
   // Distance to Alice, Bob and TN
-  int Da = 0;
-  int Db = 0;
-  int Dt = 0;
+  // Format: {Da, Db, Dt}
+  std::vector<int> D{0, 0, 0};
 
   // 4 qubit memory
   // 0 = uppper, 1 = left, 2 = right, 3 = bottom
