@@ -28,7 +28,7 @@ int main() {
 
   // just for testing, remove the right edge of the node(2,2) 
   // and see if find2qubits_IA works 
-  grid.breakEdge(2, 2, 2);
+//  grid.breakEdge(2, 2, 2);
   std::vector<int> available_q{0,1,3};
   grid.find2qubits_IA(2, 2, available_q);
 

@@ -8,6 +8,7 @@
 #include <queue>
 #include <iomanip>
 #include <algorithm>
+#include <limits.h>
 
 // @brief: inter edge 
 struct Edge {
@@ -694,7 +695,7 @@ void Grid::addIntraEdge(int x, int y, int q1, int q2) {
  */
 std::vector<int> Grid::find2qubits_IA(int curr_r, int curr_c, std::vector<int> available_q) {
  
-  std::vector<int> result;
+  std::vector<int> result(2, -1);
   
   // a vector to store the index(integer) of neighbor
   std::vector<int> neighbor;
@@ -730,65 +731,128 @@ std::vector<int> Grid::find2qubits_IA(int curr_r, int curr_c, std::vector<int> a
       D[i].erase(D[i].begin(), D[i].begin() + D[i].size()/2);
     }
 
-    // get the index(integer) of current node 
-    int curr = curr_r*grid_size + curr_c; 
-    
-    // get the index(integer) of the 3 neighbor with inter link
-    for(int i=0; i<num_neighbor; i++) {
-      neighbor.push_back(edges_per_round[curr][available_q[i]].to);
-    }
+  }
 
-    // transform neighbors' index from integer to coordinate
-    for(int i=0; i<num_neighbor; i++) {
-      neighbor_coor.push_back(int2coordinate(neighbor[i]));
-    }
+  // get the index(integer) of current node 
+  int curr = curr_r*grid_size + curr_c; 
+  
+  // get the index(integer) of the 3 neighbor with inter link
+  for(int i=0; i<num_neighbor; i++) {
+    neighbor.push_back(edges_per_round[curr][available_q[i]].to);
+  }
 
-    // calculate Dab, Dat, Dtb and add them to the corresponding location of D
-    int m = 0; // first dimension of D
-    int n = 0; // second dimension of D
-    for(int i=0; i<num_neighbor; i++) {
-      for(int j=0; j<num_neighbor; j++) {
-        if(j != i) {
-          n = 0;
-          // calculate all Dab, Dat, Dtb between neighbor i and neighbor j
-          for(int k1=0; k1<3; k1++) { // k1 means D[k1] = {Da, Db, Dt}
-            for(int k2=0; k2<3; k2++) { // k2 means D[k2] = {Da, Db, Dt}
-              if(k2 != k1) {
-                // e.g. when i=0, j=1, k1=0, k2 = 1, it is calculating Dab01
+  // transform neighbors' index from integer to coordinate
+  for(int i=0; i<num_neighbor; i++) {
+    neighbor_coor.push_back(int2coordinate(neighbor[i]));
+  }
 
-                // calculate Dab, Dat, Dtb, 
-                temp_D = node_grid_per_round[neighbor_coor[i][0]][neighbor_coor[i][1]].D[k1] + 
-                           node_grid_per_round[neighbor_coor[j][0]][neighbor_coor[j][1]].D[k2];
-             
-                // put it to corresponding location of first dimension of D 
-                D[m][n] = temp_D;
-                n ++;
-              }
+  // calculate Dab, Dat, Dtb and add them to the corresponding location of D
+  int m = 0; // first dimension of D
+  int n = 0; // second dimension of D
+  for(int i=0; i<num_neighbor; i++) {
+    for(int j=0; j<num_neighbor; j++) {
+      if(j != i) {
+        n = 0;
+        // calculate all Dab, Dat, Dtb between neighbor i and neighbor j
+        for(int k1=0; k1<3; k1++) { // k1 means D[k1] = {Da, Db, Dt}
+          for(int k2=0; k2<3; k2++) { // k2 means D[k2] = {Da, Db, Dt}
+            if(k2 != k1) {
+              // e.g. when i=0, j=1, k1=0, k2 = 1, it is calculating Dab01
+
+              // calculate Dab, Dat, Dtb, 
+              temp_D = node_grid_per_round[neighbor_coor[i][0]][neighbor_coor[i][1]].D[k1] + 
+                         node_grid_per_round[neighbor_coor[j][0]][neighbor_coor[j][1]].D[k2];
+           
+              // put it to corresponding location of first dimension of D 
+              D[m][n] = temp_D;
+              n ++;
             }
           }
-          m ++; 
-        }        
-      }
-    }
-
-    // traverse D to make sure it is correct (by checking if there is any -1)
-    for(int i=0; i<D.size(); i++) {
-      for(int j=0; j<D[i].size(); j++) {
-        if(D[i][j] == -1) {
-          std::cerr << "error: Dab, Dat, Dtb calculation mistakes!\n";
-          std::exit(EXIT_FAILURE);
         }
+        m ++; 
+      }        
+    }
+  }
+
+  // traverse D to make sure it is correct (by checking if there is any -1)
+  for(int i=0; i<D.size(); i++) {
+    for(int j=0; j<D[i].size(); j++) {
+      if(D[i][j] == -1) {
+        std::cerr << "error: Dab, Dat, Dtb calculation mistakes!\n";
+        std::exit(EXIT_FAILURE);
       }
     }
+  }
 
+  // traverse D to get the 2 qubits with the least D within D[i][j] 
+  int minVal = INT_MAX;
+  int minRow = -1;
+  int minCol = -1;
+  for(int i=0; i<D.size(); i++) {
+    for(int j=0; j<D[i].size(); j++) {
+      if(D[i][j] < minVal) {
+        minVal = D[i][j];
+        minRow = i;
+        minCol = j;
+      }
+    }
   }
-  else if(available_q.size() == 4) {
 
+  if(num_neighbor == 3) {
+    // the following mapping is based on {01, 02, 10, 12, 20, 21} 
+    if(minRow == 0) {result[0] = neighbor[0]; result[1] = neighbor[1];}
+    else if(minRow == 1) {result[0] = neighbor[0]; result[1] = neighbor[2];}
+    else if(minRow == 2) {result[0] = neighbor[1]; result[1] = neighbor[0];}
+    else if(minRow == 3) {result[0] = neighbor[1]; result[1] = neighbor[2];}
+    else if(minRow == 4) {result[0] = neighbor[2]; result[1] = neighbor[0];}
+    else if(minRow == 5) {result[0] = neighbor[2]; result[1] = neighbor[1];}
+    else {
+      std::cerr << "error: cannot find neighbor nodes to connect with minRow.\n";
+      std::exit(EXIT_FAILURE);
+    }
   }
-  else {
-    std::cerr << "available q size incorrect, can't handle size <3 or >4\n";
-    std::exit(EXIT_FAILURE);
+  else if(num_neighbor == 4) {
+    // the following mapping is based on {01, 02, 03, 10, 12, 13, 20, 21, 23, 30, 31, 32} 
+    if(minRow == 0) {result[0] = neighbor[0]; result[1] = neighbor[1];}
+    else if(minRow == 1) {result[0] = neighbor[0]; result[1] = neighbor[2];}
+    else if(minRow == 2) {result[0] = neighbor[0]; result[1] = neighbor[3];}
+    else if(minRow == 3) {result[0] = neighbor[1]; result[1] = neighbor[0];}
+    else if(minRow == 4) {result[0] = neighbor[1]; result[1] = neighbor[2];}
+    else if(minRow == 5) {result[0] = neighbor[1]; result[1] = neighbor[3];} 
+    else if(minRow == 6) {result[0] = neighbor[2]; result[1] = neighbor[0];} 
+    else if(minRow == 7) {result[0] = neighbor[2]; result[1] = neighbor[1];} 
+    else if(minRow == 8) {result[0] = neighbor[2]; result[1] = neighbor[3];} 
+    else if(minRow == 9) {result[0] = neighbor[3]; result[1] = neighbor[0];} 
+    else if(minRow == 10) {result[0] = neighbor[3]; result[1] = neighbor[1];} 
+    else if(minRow == 11) {result[0] = neighbor[3]; result[1] = neighbor[2];} 
+    else {
+      std::cerr << "error: cannot find neighbor nodes to connect with minRow.\n";
+      std::exit(EXIT_FAILURE);
+    }
   }
+
+  // now result stores 2 indices of the 2 neighbor nodes to construct intra link
+  // we need to transfer it to 2 indices of the 2 qubits of current node to construct intra link
+  // traverse the neighbor of current nodes, if find that 2 neighbor, then get the direction and 
+  // get the qubit index in that direction
+  for(int direction=0; direction<4; direction++) {
+    if(edges_per_round[curr][direction].to == result[0]) {
+      result[0] = direction;
+    } 
+    else if(edges_per_round[curr][direction].to == result[1]) {
+      result[1] = direction;
+    }
+  }
+
+  // check if result is legit
+  for(int i=0; i<result.size(); i++) {
+    if(result[i] < 0 || result[i] > 3) {
+      std::cerr << "error: result of find2qubits_IA() is wrong.\n";
+      std::exit(EXIT_FAILURE);
+    }
+  }
+
+   
   
   return result;
 
