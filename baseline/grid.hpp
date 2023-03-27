@@ -839,6 +839,8 @@ std::vector<int> Grid::find2qubits_IA(int curr_r, int curr_c, std::vector<int> a
   }
 //  else {
 //    // when there is ties
+//    // create a temporary result
+//    std::vector<std::vector<int>> temp_result;
 //    if(num_neighbor == 3) {
 //    // it means there is 
 //    }
