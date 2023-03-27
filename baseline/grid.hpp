@@ -786,50 +786,63 @@ std::vector<int> Grid::find2qubits_IA(int curr_r, int curr_c, std::vector<int> a
 
   // traverse D to get the 2 qubits with the least D within D[i][j] 
   int minVal = INT_MAX;
+  std::vector<std::vector<int>> minIndex; // {minRow, minCol}
   int minRow = -1;
   int minCol = -1;
   for(int i=0; i<D.size(); i++) {
     for(int j=0; j<D[i].size(); j++) {
       if(D[i][j] < minVal) {
         minVal = D[i][j];
-        minRow = i;
-        minCol = j;
+        minIndex.push_back({i, j});
+      }
+      else if(D[i][j] == minVal) {
+        minIndex.push_back({i, j});
       }
     }
   }
 
-  if(num_neighbor == 3) {
-    // the following mapping is based on {01, 02, 10, 12, 20, 21} 
-    if(minRow == 0) {result[0] = neighbor[0]; result[1] = neighbor[1];}
-    else if(minRow == 1) {result[0] = neighbor[0]; result[1] = neighbor[2];}
-    else if(minRow == 2) {result[0] = neighbor[1]; result[1] = neighbor[0];}
-    else if(minRow == 3) {result[0] = neighbor[1]; result[1] = neighbor[2];}
-    else if(minRow == 4) {result[0] = neighbor[2]; result[1] = neighbor[0];}
-    else if(minRow == 5) {result[0] = neighbor[2]; result[1] = neighbor[1];}
-    else {
-      std::cerr << "error: cannot find neighbor nodes to connect with minRow.\n";
-      std::exit(EXIT_FAILURE);
+  int minRow = minIndex[0][0];
+  int minCol = minIndex[0][1];
+  if(minIndex.size() == 1) {
+    if(num_neighbor == 3) {
+      // the following mapping is based on {01, 02, 10, 12, 20, 21} 
+      if(minRow == 0) {result[0] = neighbor[0]; result[1] = neighbor[1];}
+      else if(minRow == 1) {result[0] = neighbor[0]; result[1] = neighbor[2];}
+      else if(minRow == 2) {result[0] = neighbor[1]; result[1] = neighbor[0];}
+      else if(minRow == 3) {result[0] = neighbor[1]; result[1] = neighbor[2];}
+      else if(minRow == 4) {result[0] = neighbor[2]; result[1] = neighbor[0];}
+      else if(minRow == 5) {result[0] = neighbor[2]; result[1] = neighbor[1];}
+      else {
+        std::cerr << "error: cannot find neighbor nodes to connect with minRow.\n";
+        std::exit(EXIT_FAILURE);
+      }
+    }
+    else if(num_neighbor == 4) {
+      // the following mapping is based on {01, 02, 03, 10, 12, 13, 20, 21, 23, 30, 31, 32} 
+      if(minRow == 0) {result[0] = neighbor[0]; result[1] = neighbor[1];}
+      else if(minRow == 1) {result[0] = neighbor[0]; result[1] = neighbor[2];}
+      else if(minRow == 2) {result[0] = neighbor[0]; result[1] = neighbor[3];}
+      else if(minRow == 3) {result[0] = neighbor[1]; result[1] = neighbor[0];}
+      else if(minRow == 4) {result[0] = neighbor[1]; result[1] = neighbor[2];}
+      else if(minRow == 5) {result[0] = neighbor[1]; result[1] = neighbor[3];} 
+      else if(minRow == 6) {result[0] = neighbor[2]; result[1] = neighbor[0];} 
+      else if(minRow == 7) {result[0] = neighbor[2]; result[1] = neighbor[1];} 
+      else if(minRow == 8) {result[0] = neighbor[2]; result[1] = neighbor[3];} 
+      else if(minRow == 9) {result[0] = neighbor[3]; result[1] = neighbor[0];} 
+      else if(minRow == 10) {result[0] = neighbor[3]; result[1] = neighbor[1];} 
+      else if(minRow == 11) {result[0] = neighbor[3]; result[1] = neighbor[2];} 
+      else {
+        std::cerr << "error: cannot find neighbor nodes to connect with minRow.\n";
+        std::exit(EXIT_FAILURE);
+      }
     }
   }
-  else if(num_neighbor == 4) {
-    // the following mapping is based on {01, 02, 03, 10, 12, 13, 20, 21, 23, 30, 31, 32} 
-    if(minRow == 0) {result[0] = neighbor[0]; result[1] = neighbor[1];}
-    else if(minRow == 1) {result[0] = neighbor[0]; result[1] = neighbor[2];}
-    else if(minRow == 2) {result[0] = neighbor[0]; result[1] = neighbor[3];}
-    else if(minRow == 3) {result[0] = neighbor[1]; result[1] = neighbor[0];}
-    else if(minRow == 4) {result[0] = neighbor[1]; result[1] = neighbor[2];}
-    else if(minRow == 5) {result[0] = neighbor[1]; result[1] = neighbor[3];} 
-    else if(minRow == 6) {result[0] = neighbor[2]; result[1] = neighbor[0];} 
-    else if(minRow == 7) {result[0] = neighbor[2]; result[1] = neighbor[1];} 
-    else if(minRow == 8) {result[0] = neighbor[2]; result[1] = neighbor[3];} 
-    else if(minRow == 9) {result[0] = neighbor[3]; result[1] = neighbor[0];} 
-    else if(minRow == 10) {result[0] = neighbor[3]; result[1] = neighbor[1];} 
-    else if(minRow == 11) {result[0] = neighbor[3]; result[1] = neighbor[2];} 
-    else {
-      std::cerr << "error: cannot find neighbor nodes to connect with minRow.\n";
-      std::exit(EXIT_FAILURE);
-    }
-  }
+//  else {
+//    // when there is ties
+//    if(num_neighbor == 3) {
+//    // it means there is 
+//    }
+//  }
 
   // now result stores 2 indices of the 2 neighbor nodes to construct intra link
   // we need to transfer it to 2 indices of the 2 qubits of current node to construct intra link
