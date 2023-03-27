@@ -16,3 +16,10 @@
 
 - Updating stage2_local_IA()
 - Updating find2qubits_IA(), now I have get the 2 qubit indices to connect. I am handling "tie" situation now.
+
+### progress 3/26/11:10PM
+
+- Updating stage2_local_IA()
+- Finish find2qubits_IA()
+
+
