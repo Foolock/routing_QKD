@@ -21,5 +21,6 @@
 
 - Updating stage2_local_IA(): finish connect qubit memories, next step is to find actual path with inter and intra links
 - Finish find2qubits_IA()
+- Implementing DFS in stage2_local_IA() to find path
 
 

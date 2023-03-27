@@ -658,6 +658,14 @@ void Grid::stage2_local_IA() {
       }
     }
   }
+
+  /*
+   * second, find paths through the connect inter and intra links
+   */
+
+  // to find the path, we can use dfs cuz the links have been fixed, i.e., we cannot make choices
+  
+
 }
 
 /**
