@@ -127,7 +127,7 @@ class Grid {
      * https://www.geeksforgeeks.org/print-paths-given-source-destination-using-bfs/
      *
      * input:
-     *  s, t: index(integer) of source and sink node. i.e., role of node. (1 = Alice, 3=TN, 2=Bob)
+     *  s, t: index(integer) of source and sink node. Notice: not the role of node
      * 
      */
     std::vector<std::vector<int>> bfs(int s, int t);
@@ -916,6 +916,50 @@ std::vector<int> Grid::find2qubits_IA(int curr_r, int curr_c, std::vector<int> a
   return result;
 
 }
+
+
+/**
+ * @brief: helper: dfs, recurr from one sink(set as Alice or TN) until it meets a sink as another user node(Bob) or TN 
+ *
+ *
+ *
+ *
+ */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
