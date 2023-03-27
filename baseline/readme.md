@@ -19,7 +19,7 @@
 
 ### progress 3/26/11:10PM
 
-- Updating stage2_local_IA()
+- Updating stage2_local_IA(): finish connect qubit memories, next step is to find actual path with inter and intra links
 - Finish find2qubits_IA()
 
 

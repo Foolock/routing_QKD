@@ -610,6 +610,8 @@ void Grid::stage2_local_IA() {
   // create a vector to store which qubits are available in qubits of the node
   std::vector<int> available_q;
 
+  std::vector<int> connect_q;
+
   for(int row=0; row<grid_size; row++) {
     for(int col=0; col<grid_size; col++) {
       // for each node in the node_grid
@@ -631,12 +633,29 @@ void Grid::stage2_local_IA() {
       }
       // if num == 3, connect the 2 qubits with min D
       else if(available_q.size() == 3) {
-               
-      
-
+        // get the 2 qubits that needs to connect
+        connect_q = find2qubits_IA(row, col, available_q);
+           
+        // connect intra link between these 2 qubits
+        addIntraEdge(row, col, connect_q[0], connect_q[1]);
       }
-    
+      else if(available_q.size() == 4) {
+        // get the 2 qubits that needs to connect
+        connect_q = find2qubits_IA(row, col, available_q);
 
+        // connect intra link between these 2 qubits
+        addIntraEdge(row, col, connect_q[0], connect_q[1]);
+      
+        // also connect the 2 remaining qubits
+        std::vector<int> remain_q;
+        std::sort(available_q.begin(), available_q.end());
+        std::sort(connect_q.begin(), connect_q.end());
+        remain_q.reserve(available_q.size());
+        std::set_difference(available_q.begin(), available_q.end(), connect_q.begin(), connect_q.end(), std::back_inserter(remain_q));
+
+        addIntraEdge(row, col, remain_q[0], remain_q[1]);
+        
+      }
     }
   }
 }
