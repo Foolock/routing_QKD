@@ -158,6 +158,9 @@ class Grid {
 
     std::vector<int> find2qubits_IA(int curr_r, int curr_c, std::vector<int> available_q);
 
+    void dfs(int s, int curr_q, std::vector<int>& path); 
+
+    std::vector<std::vector<int>> getPathsDFS(int s, int t);
 //  private:
     // node grid
     // format: node_grid_per_round[row][col] stands for the node in row-1 row and col-1 col
@@ -921,11 +924,114 @@ std::vector<int> Grid::find2qubits_IA(int curr_r, int curr_c, std::vector<int> a
 /**
  * @brief: helper: dfs, recurr from one sink(set as Alice or TN) until it meets a sink as another user node(Bob) or TN 
  *
+ * input:
+ *  s: index(integer) of source node
+ *  curr_q: index([0,3]) of current qubit
+ *
+ * return(void):
+ *  push the index of node to a path starting from s to TN or Bob or end node
+ */
+void Grid::dfs(int s, int curr_q, std::vector<int>& path) {
+
+  /*
+   * from the source node(Alice), keep recurrsion until an end it reach.
+   * push back every node index to the path cuz there won't be joint path 
+   * end condition: 1. either a role node(TN or Bob) -> Node.role = 2 or 3
+   *                2. or an end node is reach -> no intra link reachable 
+   *                                           -> the current qubit.to = -1 
+   *
+   * continueous condition: 1. from the qubit and the inter link, get the next node 
+   *                        2. traverse the qubits next_q of the next node, 
+   *                           if next_q != 3 - curr_q, keep dfs(next, next_q)
+   */
+
+  // push back the current node index into path   
+  path.push_back(s);
+  
+  // end condition check
+  std::vector<int> s_coor = int2coordinate(s);
+  if(node_grid_per_round[s_coor[0]][s_coor[1]].role != 0 || 
+      node_grid_per_round[s_coor[0]][s_coor[1]].qubits[curr_q].to == -1) { 
+    // if this node is not a repeater or the qubit inside this node has no intra link
+    // return 
+    return;
+  }
+  // continueous condition check
+  else { 
+  
+    // get the index of next node which the current qubit is connected to through inter link 
+    // by edges_per_round[curr_node][direction] = next, here direction = curr_q
+    // (both are 0 = uppper, 1 = left, 2 = right, 3 = bottom)
+    int next = edges_per_round[s][curr_q].to;
+
+    // get the next_q, the other qubit from the next node which is connected through inter link
+    // next_q = 3 - curr_q cuz they are in reverse position(upper-to-bottom, right-to-left)
+    int next_q = 3 - curr_q;
+    
+    // recurr
+    dfs(next, next_q, path);
+  }
+
+}
+
+/**
+ * @brief: stage 2 local routing: get the paths(stored in 2-D vector)
  *
  *
  *
  */
+std::vector<std::vector<int>> Grid::getPathsDFS(int s, int t) {
 
+  // a 2-d vector result to store all the paths
+  std::vector<std::vector<int>> result;
+
+  // a path vector to store the path we found
+  std::vector<int> path;
+
+  // end node of path(index in coordinate)
+  int end_node = -1;
+
+  // get the integer index of node 
+  int A = A_index[0]*grid_size + A_index[1];
+  int B = B_index[0]*grid_size + B_index[1];
+  int T = T_index[0]*grid_size + T_index[1];
+  
+
+  // get the path from A to TN or Bob
+  // goes upper from A
+  dfs(A, 0, path);
+  // if the end node of path is a repeater or A itself, drop it.
+  end_node = path.back(); // path will not be empty, if empty there means something wrong 
+  if(end_node == B ||
+     end_node == T) {
+    result.push_back(path);
+  }
+  path.clear();
+
+  // goes right from A
+  dfs(A, 2, path);
+  // if the end node of path is a repeater or A itself, drop it.
+  end_node = path.back(); // path will not be empty, if empty there means something wrong 
+  if(end_node == B ||
+     end_node == T) {
+    result.push_back(path);
+  }
+  path.clear();
+
+  // get the path from T to Bob 
+  for(int direction=0; direction<4; direction++) {
+    dfs(T, direction, path);
+    // if the end node of path is a repeater or A or T itself, drop it.
+    end_node = path.back(); // path will not be empty, if empty there means something wrong 
+    if(end_node == B) {
+      result.push_back(path);
+    }
+    path.clear();
+  }
+
+  return result;
+
+}
 
 
 
