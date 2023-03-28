@@ -28,3 +28,5 @@
 - DFS in stage2_local_IA() finished
 - Updating stage2_local_IA().
 - Remove a bug from find2Qubits_IA(): No matter num_neighbor = 3 or num_neighbor = 4, the second dimension of D should always be 6
+- Bug found, no paths were found in stage2_local_IA()
+

@@ -486,12 +486,13 @@ void Grid::stage2_global() {
     std::cout << "\n\n";
 
     // put shortest path into the corresponding SS before we erase it
+    // -1 because it is counting the number of nodes
     if(shortest[0] == A_index[0]*grid_size+A_index[1] &&
-        shortest[shortest.size()-1] == B_index[0]*grid_size+B_index[1]) {SSab.push_back(shortest.size());}
+        shortest[shortest.size()-1] == B_index[0]*grid_size+B_index[1]) {SSab.push_back(shortest.size() - 1);}
     else if(shortest[0] == A_index[0]*grid_size+A_index[1] &&
-        shortest[shortest.size()-1] == T_index[0]*grid_size+T_index[1]) {SSat.push_back(shortest.size());}
+        shortest[shortest.size()-1] == T_index[0]*grid_size+T_index[1]) {SSat.push_back(shortest.size() - 1);}
     else if(shortest[0] == T_index[0]*grid_size+T_index[1] &&
-        shortest[shortest.size()-1] == B_index[0]*grid_size+B_index[1]) {SStb.push_back(shortest.size());}
+        shortest[shortest.size()-1] == B_index[0]*grid_size+B_index[1]) {SStb.push_back(shortest.size() - 1);}
     else {
       std::cerr << "stage 2 error: shortest path source and sink incorrect.\n";
       std::cerr << "source :" << shortest[0] << " sink: " << shortest[shortest.size()-1] << "\n";
@@ -668,7 +669,43 @@ void Grid::stage2_local_IA() {
 
   // to find the path, we can use dfs cuz the links have been fixed, i.e., we cannot make choices
   std::vector<std::vector<int>> paths = getPathsDFS();    
+ 
+  /*
+   * finally, push back the path length to the corresponding SS
+   */
+   // get the integer index of node 
+  int A = A_index[0]*grid_size + A_index[1];
+  int B = B_index[0]*grid_size + B_index[1];
+  int T = T_index[0]*grid_size + T_index[1];
   
+  for(int i=0; i<paths.size(); i++) {
+   
+    // -1 because paths[i] is counting the nodes
+    if(paths[i].front() == A && paths[i].back() == T) {SSat.push_back(paths[i].size() - 1);}   
+    else if(paths[i].front() == A && paths[i].back() == B) {SSab.push_back(paths[i].size() - 1);}   
+    else if(paths[i].front() == T && paths[i].back() == B) {SStb.push_back(paths[i].size() - 1);}   
+
+  }
+
+  std::cout << "paths.size(): " << paths.size() << "\n";
+
+  // print the path for testing
+  for(int i=0; i<paths.size(); i++) {
+    
+    if(paths[i].front() == A && paths[i].back() == T) {
+      std::cout << "paths between A and T: \n";
+      std::for_each(paths[i].begin(), paths[i].end(), [](int j){ std::cout << j << " -- "; });
+    }
+    else if(paths[i].front() == A && paths[i].back() == B) {
+      std::cout << "paths between A and B: \n";
+      std::for_each(paths[i].begin(), paths[i].end(), [](int j){ std::cout << j << " -- "; });
+    }
+    else if(paths[i].front() == T && paths[i].back() == B) {
+      std::cout << "paths between T and B: \n";
+      std::for_each(paths[i].begin(), paths[i].end(), [](int j){ std::cout << j << " -- "; });
+    }
+  
+  }
 
 }
 
