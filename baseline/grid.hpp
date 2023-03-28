@@ -158,7 +158,7 @@ class Grid {
 
     std::vector<int> find2qubits_IA(int curr_r, int curr_c, std::vector<int> available_q);
 
-    void dfs(int s, int curr_q, std::vector<int>& path); 
+    void dfs(int s, int role_s, int curr_q, std::vector<int>& path); 
 
     std::vector<std::vector<int>> getPathsDFS();
 //  private:
@@ -695,14 +695,17 @@ void Grid::stage2_local_IA() {
     if(paths[i].front() == A && paths[i].back() == T) {
       std::cout << "paths between A and T: \n";
       std::for_each(paths[i].begin(), paths[i].end(), [](int j){ std::cout << j << " -- "; });
+      std::cout << "\n";
     }
     else if(paths[i].front() == A && paths[i].back() == B) {
       std::cout << "paths between A and B: \n";
       std::for_each(paths[i].begin(), paths[i].end(), [](int j){ std::cout << j << " -- "; });
+      std::cout << "\n";
     }
     else if(paths[i].front() == T && paths[i].back() == B) {
       std::cout << "paths between T and B: \n";
       std::for_each(paths[i].begin(), paths[i].end(), [](int j){ std::cout << j << " -- "; });
+      std::cout << "\n";
     }
   
   }
@@ -968,7 +971,7 @@ std::vector<int> Grid::find2qubits_IA(int curr_r, int curr_c, std::vector<int> a
  * return(void):
  *  push the index of node to a path starting from s to TN or Bob or end node
  */
-void Grid::dfs(int s, int curr_q, std::vector<int>& path) {
+void Grid::dfs(int s, int role_s, int curr_q, std::vector<int>& path) {
 
   /*
    * from the source node(Alice), keep recurrsion until an end it reach.
@@ -987,8 +990,9 @@ void Grid::dfs(int s, int curr_q, std::vector<int>& path) {
   
   // end condition check
   std::vector<int> s_coor = int2coordinate(s);
-  if(node_grid_per_round[s_coor[0]][s_coor[1]].role != 0 || 
-      node_grid_per_round[s_coor[0]][s_coor[1]].qubits[curr_q].to == -1) { 
+  if((node_grid_per_round[s_coor[0]][s_coor[1]].role != 0 && 
+      node_grid_per_round[s_coor[0]][s_coor[1]].role != role_s)
+        || node_grid_per_round[s_coor[0]][s_coor[1]].qubits[curr_q].to == -1) { 
     // if this node is not a repeater or the qubit inside this node has no intra link
     // return 
     return;
@@ -999,14 +1003,18 @@ void Grid::dfs(int s, int curr_q, std::vector<int>& path) {
     // get the index of next node which the current qubit is connected to through inter link 
     // by edges_per_round[curr_node][direction] = next, here direction = curr_q
     // (both are 0 = uppper, 1 = left, 2 = right, 3 = bottom)
-    int next = edges_per_round[s][curr_q].to;
+//    int next = edges_per_round[s][curr_q].to;
 
     // get the next_q, the other qubit from the next node which is connected through inter link
     // next_q = 3 - curr_q cuz they are in reverse position(upper-to-bottom, right-to-left)
+//    int next_q = 3 - curr_q;
+    if(node_grid_per_round[s_coor[0]][s_coor[1]].role != role_s) {
+      curr_q = node_grid_per_round[s_coor[0]][s_coor[1]].qubits[curr_q].to;
+    }
+    int next = edges_per_round[s][curr_q].to;
     int next_q = 3 - curr_q;
-    
     // recurr
-    dfs(next, next_q, path);
+    dfs(next, role_s, next_q, path);
   }
 
 }
@@ -1036,7 +1044,7 @@ std::vector<std::vector<int>> Grid::getPathsDFS() {
 
   // get the path from A to TN or Bob
   // goes upper from A
-  dfs(A, 0, path);
+  dfs(A, 1, 0, path);
   // if the end node of path is a repeater or A itself, drop it.
   end_node = path.back(); // path will not be empty, if empty there means something wrong 
   if(end_node == B ||
@@ -1046,7 +1054,7 @@ std::vector<std::vector<int>> Grid::getPathsDFS() {
   path.clear();
 
   // goes right from A
-  dfs(A, 2, path);
+  dfs(A, 1, 2, path);
   // if the end node of path is a repeater or A itself, drop it.
   end_node = path.back(); // path will not be empty, if empty there means something wrong 
   if(end_node == B ||
@@ -1057,7 +1065,7 @@ std::vector<std::vector<int>> Grid::getPathsDFS() {
 
   // get the path from T to Bob 
   for(int direction=0; direction<4; direction++) {
-    dfs(T, direction, path);
+    dfs(T, 3, direction, path);
     // if the end node of path is a repeater or A or T itself, drop it.
     end_node = path.back(); // path will not be empty, if empty there means something wrong 
     if(end_node == B) {
