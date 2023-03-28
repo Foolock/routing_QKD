@@ -12,12 +12,12 @@ int main() {
   
   std::cout << "before stage 1: \n";
   grid.display();
-//  
-//  grid.stage1();
-//  std::cout << "after stage 1: \n";
-//  grid.display();
-//
-//  grid.stage2_global();
+  
+  grid.stage1();
+  std::cout << "after stage 1: \n";
+  grid.display();
+
+  grid.stage2_local_IA();
 //
 //  std::cout << "check SS : \n";
 //  std::cout << "SSab: ";
@@ -29,8 +29,8 @@ int main() {
   // just for testing, remove the right edge of the node(2,2) 
   // and see if find2qubits_IA works 
 //  grid.breakEdge(2, 2, 2);
-  std::vector<int> available_q{0,1,3};
-  grid.find2qubits_IA(2, 2, available_q);
+//  std::vector<int> available_q{0,1,3};
+//  grid.find2qubits_IA(2, 2, available_q);
 
   return 0;
 }

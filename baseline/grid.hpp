@@ -160,7 +160,7 @@ class Grid {
 
     void dfs(int s, int curr_q, std::vector<int>& path); 
 
-    std::vector<std::vector<int>> getPathsDFS(int s, int t);
+    std::vector<std::vector<int>> getPathsDFS();
 //  private:
     // node grid
     // format: node_grid_per_round[row][col] stands for the node in row-1 row and col-1 col
@@ -667,6 +667,7 @@ void Grid::stage2_local_IA() {
    */
 
   // to find the path, we can use dfs cuz the links have been fixed, i.e., we cannot make choices
+  std::vector<std::vector<int>> paths = getPathsDFS();    
   
 
 }
@@ -736,14 +737,14 @@ std::vector<int> Grid::find2qubits_IA(int curr_r, int curr_c, std::vector<int> a
   // a 2-D vector to store Dab, Dat, Dtb of each pair of 3~4 neighbors
   /* 
    * first dimension: stores D between {01, 02, 03, 10, 12, 13, 20, 21, 23, 30, 31, 32},
-   * 01 means every Dab, Dat, Dtb combinations(totally 12) between neighbor 0 and neighbor 1
+   * 01 means every Dab, Dat, Dtb combinations(totally 6) between neighbor 0 and neighbor 1
    *
    * second dimension: a vector to store Dab, Dat, Dtb of 2 neighbors(there should be 12 combinations,
    * as Dab12 may not be equal to Dab21
    * 
    * this vector is initialized with all entries = -1 for testing
    */
-  std::vector<std::vector<int>> D(12, std::vector<int>(12, -1));
+  std::vector<std::vector<int>> D(12, std::vector<int>(6, -1));
 
   // temp result for D calculation
   int temp_D;
@@ -755,11 +756,7 @@ std::vector<int> Grid::find2qubits_IA(int curr_r, int curr_c, std::vector<int> a
     
     // when there are 3 neighbors, the first dimension of 2-d vector D only has
     // 6 entris: {01, 02, 10, 12, 20, 21}, so remove half of its first dimension,
-    // same for second dimension
     D.erase(D.begin(), D.begin() + D.size()/2);
-    for(int i=0; i<D.size(); i++) {
-      D[i].erase(D[i].begin(), D[i].begin() + D[i].size()/2);
-    }
 
   }
 
@@ -809,6 +806,9 @@ std::vector<int> Grid::find2qubits_IA(int curr_r, int curr_c, std::vector<int> a
     for(int j=0; j<D[i].size(); j++) {
       if(D[i][j] == -1) {
         std::cerr << "error: Dab, Dat, Dtb calculation mistakes!\n";
+        std::cerr << "mistake happens in node = (" << curr_r << ", " << curr_c 
+          << "), available_q = " << available_q.size() << "\n"; 
+        std::cerr << "mistake happens in i = " << i << ", j = " << j << "\n"; 
         std::exit(EXIT_FAILURE);
       }
     }
@@ -980,7 +980,7 @@ void Grid::dfs(int s, int curr_q, std::vector<int>& path) {
  *
  *
  */
-std::vector<std::vector<int>> Grid::getPathsDFS(int s, int t) {
+std::vector<std::vector<int>> Grid::getPathsDFS() {
 
   // a 2-d vector result to store all the paths
   std::vector<std::vector<int>> result;
