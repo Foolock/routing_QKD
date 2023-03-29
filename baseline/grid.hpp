@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <algorithm>
 #include <limits.h>
+#include <string>
 
 // @brief: inter edge 
 struct Edge {
@@ -161,7 +162,11 @@ class Grid {
     void dfs(int s, int role_s, int curr_q, std::vector<int>& path); 
 
     std::vector<std::vector<int>> getPathsDFS();
-//  private:
+
+    void displayNodeStatus(); 
+
+    void breakIntraEdge(int x, int y);
+// private:
     // node grid
     // format: node_grid_per_round[row][col] stands for the node in row-1 row and col-1 col
     std::vector<std::vector<Node>> node_grid; // original node_grid
@@ -751,6 +756,22 @@ void Grid::addIntraEdge(int x, int y, int q1, int q2) {
 }
 
 /**
+ * @brief: break intra link
+ * 
+ * input:
+ *  x, y: index(coordinate) of a node in the node grid
+ */
+void Grid::breakIntraEdge(int x, int y) {
+  if(node_grid_per_round[x][y].role = 0) {
+    std::cerr << "error: you cannot break the intra link of a router.\n";
+    std::exit(EXIT_FAILURE);
+  }
+  for(int q=0; q<4; q++) {
+    node_grid_per_round[x][y].qubits[q].to = -1;
+  }
+}
+
+/**
  * @brief: IA algorithm
  *
  * input:
@@ -966,17 +987,18 @@ std::vector<int> Grid::find2qubits_IA(int curr_r, int curr_c, std::vector<int> a
  *
  * input:
  *  s: index(integer) of source node
+ *  target: index(integer) of the sink node
  *  curr_q: index([0,3]) of current qubit
  *
  * return(void):
  *  push the index of node to a path starting from s to TN or Bob or end node
  */
-void Grid::dfs(int s, int role_s, int curr_q, std::vector<int>& path) {
+void Grid::dfs(int s, int target, int curr_q, std::vector<int>& path) {
 
   /*
-   * from the source node(Alice), keep recurrsion until an end it reach.
+   * from the source node(s), keep recurrsion until it reach target or an end node.
    * push back every node index to the path cuz there won't be joint path 
-   * end condition: 1. either a role node(TN or Bob) -> Node.role = 2 or 3
+   * end condition: 1. either Node.role = target 
    *                2. or an end node is reach -> no intra link reachable 
    *                                           -> the current qubit.to = -1 
    *
@@ -990,8 +1012,7 @@ void Grid::dfs(int s, int role_s, int curr_q, std::vector<int>& path) {
   
   // end condition check
   std::vector<int> s_coor = int2coordinate(s);
-  if((node_grid_per_round[s_coor[0]][s_coor[1]].role != 0 && 
-      node_grid_per_round[s_coor[0]][s_coor[1]].role != role_s)
+  if(s == target  
         || node_grid_per_round[s_coor[0]][s_coor[1]].qubits[curr_q].to == -1) { 
     // if this node is not a repeater or the qubit inside this node has no intra link
     // return 
@@ -999,22 +1020,42 @@ void Grid::dfs(int s, int role_s, int curr_q, std::vector<int>& path) {
   }
   // continueous condition check
   else { 
-  
+ 
+    // go through the intra link
+    int next_q = node_grid_per_round[s_coor[0]][s_coor[1]].qubits[curr_q].to;
+   
     // get the index of next node which the current qubit is connected to through inter link 
-    // by edges_per_round[curr_node][direction] = next, here direction = curr_q
+    // by edges_per_round[curr_node][direction] = next, here direction = next_q
     // (both are 0 = uppper, 1 = left, 2 = right, 3 = bottom)
-//    int next = edges_per_round[s][curr_q].to;
-
-    // get the next_q, the other qubit from the next node which is connected through inter link
-    // next_q = 3 - curr_q cuz they are in reverse position(upper-to-bottom, right-to-left)
-//    int next_q = 3 - curr_q;
-    if(node_grid_per_round[s_coor[0]][s_coor[1]].role != role_s) {
-      curr_q = node_grid_per_round[s_coor[0]][s_coor[1]].qubits[curr_q].to;
-    }
-    int next = edges_per_round[s][curr_q].to;
-    int next_q = 3 - curr_q;
+    int next = edges_per_round[s][next_q].to;
+    
+    // before next dfs, next_q = 3 - next_q cuz for neighbor node's current qubit
+    // in the next dfs, it is in reverse direction to next_q in this iteration
+    next_q = 3 - next_q;
+    
+//    // if next is in the path already. there is a loop!, or maybe a complex detour(a node can be crossed 2 times)
+//    if(isInPath(next, path)) {
+//      std::vector<int> next_coor = int2coordinate(next);
+//      if(next != 12 && next != 4 && next != 20 && node_grid_per_round[next_coor[0]][next_coor[1]].qubits[next_q].to != -1) {
+//        std::cerr << "error: there is a loop.\n";
+//        std::cerr << "current s: " << s << "\n";
+//        std::cerr << "current q: " << curr_q << "\n";
+//        std::cerr << "intra link status of this curr_q: " << curr_q << "--->" << node_grid_per_round[s_coor[0]][s_coor[1]].qubits[curr_q].to << "\n";
+//        std::cerr << "next: " << next << "\n";
+//        std::cerr << "next_q: " << next_q << "\n"; 
+//        std::cerr << "this is the path: \n";
+//        for(int i=0; i<path.size(); i++) {
+//          std::cerr << path[i] << " -- ";
+//        }
+//        
+//        displayNodeStatus();
+//
+//        std::exit(EXIT_FAILURE);
+//      }
+//    }
+// 
     // recurr
-    dfs(next, role_s, next_q, path);
+    dfs(next, target, next_q, path);
   }
 
 }
@@ -1026,6 +1067,12 @@ void Grid::dfs(int s, int role_s, int curr_q, std::vector<int>& path) {
  *
  */
 std::vector<std::vector<int>> Grid::getPathsDFS() {
+
+  // before you find paths
+  // you need to break all the intra links of A, B, T in case in dfs you will stuck in loop
+  breakIntraEdge(A_index[0], A_index[1]);
+  breakIntraEdge(B_index[0], B_index[1]);
+  breakIntraEdge(T_index[0], T_index[1]);
 
   // a 2-d vector result to store all the paths
   std::vector<std::vector<int>> result;
@@ -1040,45 +1087,93 @@ std::vector<std::vector<int>> Grid::getPathsDFS() {
   int A = A_index[0]*grid_size + A_index[1];
   int B = B_index[0]*grid_size + B_index[1];
   int T = T_index[0]*grid_size + T_index[1];
-  
 
-  // get the path from A to TN or Bob
-  // goes upper from A
-  dfs(A, 1, 0, path);
-  // if the end node of path is a repeater or A itself, drop it.
-  end_node = path.back(); // path will not be empty, if empty there means something wrong 
-  if(end_node == B ||
-     end_node == T) {
-    result.push_back(path);
-  }
-  path.clear();
+  std::vector<int> targets{T, B};
 
-  // goes right from A
-  dfs(A, 1, 2, path);
-  // if the end node of path is a repeater or A itself, drop it.
-  end_node = path.back(); // path will not be empty, if empty there means something wrong 
-  if(end_node == B ||
-     end_node == T) {
-    result.push_back(path);
-  }
-  path.clear();
-
-  // get the path from T to Bob 
-  for(int direction=0; direction<4; direction++) {
-    dfs(T, 3, direction, path);
-    // if the end node of path is a repeater or A or T itself, drop it.
-    end_node = path.back(); // path will not be empty, if empty there means something wrong 
-    if(end_node == B) {
-      result.push_back(path);
+  // get the path from A to TN or B
+  for(auto target : targets) {
+    for(int direction=0; direction<4; direction++) { // traverse A's directions to find its neighbor
+      if(edges_per_round[A][direction].to != -1) {
+        int neighbor_A = edges_per_round[A][direction].to;
+        path.push_back(A); // before dfs, put A as the starting node
+        int neighbor_q = 3 - direction; // This neighbor's qubit connected with A through inter link is in the reverse direction
+        dfs(neighbor_A, target, neighbor_q, path);
+        end_node = path.back();
+        if(end_node == T) {
+          result.push_back(path);
+        }
+        path.clear();
+      }
     }
-    path.clear();
+  }
+
+  // get the path from T to B
+  for(int direction=0; direction<4; direction++) { // traverse T's directions to find its neighbor
+    if(edges_per_round[T][direction].to != -1) {
+      int neighbor_T = edges_per_round[T][direction].to;
+      path.push_back(T); // before dfs, put T as the starting node
+      int neighbor_q = 3 - direction; // This neighbor's qubit connected with T through inter link is in the reverse direction
+      dfs(neighbor_T, B, neighbor_q, path);
+      end_node = path.back();
+      if(end_node == T) {
+        result.push_back(path);
+      }
+      path.clear();
+    }
   }
 
   return result;
 
 }
 
+/**
+ * @brief: helper: a function to show the qubits and intra link status of a node
+ *
+ *
+ */
+void Grid::displayNodeStatus() {
+  
 
+  std::cout << "checking node's qubit and intra links status:\n";
+
+  int check = 1;
+  
+  while(check) {
+    
+    // get row and col
+    int row, col;
+    std::cout << "input row: ";
+    std::cin >> row;
+    std::cout << "input col: ";
+    std::cin >> col;
+    std::cout << "for node (" << row << ", " << col << "):\n";
+
+    // print node's qubits status
+    std::cout << "qubits status: \n";
+    for (int i=0; i<4; i++) {
+      if(node_grid_per_round[row][col].qubits[i].available) {
+        std::cout << "y ";
+      }
+      else {
+        std::cout << "n ";
+      }
+    } 
+    std::cout << "\n";
+
+    // print node's intra links status
+    std::cout << "intra links status: \n";
+    for (int i=0; i<4; i++) {
+      std::cout << i << "(" << node_grid_per_round[row][col].qubits[i].to << ") "; 
+    }
+    std::cout << "\n";
+
+
+    std::cout << "check(1), stop(0)\n";
+
+    std::cin >> check;
+
+ }
+}
 
 
 

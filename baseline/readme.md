@@ -36,3 +36,7 @@
 - stage2_local_IA() performs very strangely. Paths are hard to find and it takes "too many turns"
 - Try to implement a function to show the intra link status and qubits status of a node to check 
 
+### progress 3/29/5:38PM
+
+- Solved a segmentation fault Bug in dfs: it was stucking in the iteration sometimes and caused it to overflow
+- Implementation of checking node's status function finished. Trying to solve the detour problem of IA local routing.
