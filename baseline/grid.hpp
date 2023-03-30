@@ -954,18 +954,18 @@ std::vector<int> Grid::find2qubits_IA(int curr_r, int curr_c, std::vector<int> a
 
   }
 
-  // now get the first pair in temp_result that can make vertical or horizontal link
+  // get the first result first 
+  result = temp_result[0];
+
+  // then try to get the first pair in temp_result that can make vertical or horizontal link(if there is one)
   for(int i=0; i<temp_result.size(); i++) {
     // if the qubit index add up to 3, then it is vertical or horizontal
     if(temp_result[i][0] + temp_result[i][1] == 3) {
       result = temp_result[i];
     }
-    // notice that there may not be vertical or horizontal link sometimes, then just select the last one
-    else {
-      result = temp_result[i];
-    }
+    
   }
-
+  
 
   // check if result is legit
   for(int i=0; i<result.size(); i++) {
