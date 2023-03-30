@@ -1136,8 +1136,12 @@ void Grid::displayNodeStatus() {
 
   std::cout << "checking node's qubit and intra links status:\n";
 
-  int check = 1;
-  
+  int check = 0;
+ 
+  std::cout << "do you need to check? yes(1), no(0)\n";
+
+  std::cin >> check;
+
   while(check) {
     
     // get row and col

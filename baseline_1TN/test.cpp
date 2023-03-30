@@ -32,7 +32,7 @@ int main() {
 //  std::vector<int> available_q{0,1,3};
 //  grid.find2qubits_IA(2, 2, available_q);
 
-//  grid.displayNodeStatus();
+  grid.displayNodeStatus();
 
   
 
