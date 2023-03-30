@@ -40,3 +40,4 @@
 
 - Solved a segmentation fault Bug in dfs: it was stucking in the iteration sometimes and caused it to overflow
 - Implementation of checking node's status function finished. Trying to solve the detour problem of IA local routing.
+- The detour problem may be caused by the algorithm itself. still need to check

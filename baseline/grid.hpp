@@ -1099,7 +1099,7 @@ std::vector<std::vector<int>> Grid::getPathsDFS() {
         int neighbor_q = 3 - direction; // This neighbor's qubit connected with A through inter link is in the reverse direction
         dfs(neighbor_A, target, neighbor_q, path);
         end_node = path.back();
-        if(end_node == T) {
+        if(end_node == target) {
           result.push_back(path);
         }
         path.clear();
@@ -1115,7 +1115,7 @@ std::vector<std::vector<int>> Grid::getPathsDFS() {
       int neighbor_q = 3 - direction; // This neighbor's qubit connected with T through inter link is in the reverse direction
       dfs(neighbor_T, B, neighbor_q, path);
       end_node = path.back();
-      if(end_node == T) {
+      if(end_node == B) {
         result.push_back(path);
       }
       path.clear();
