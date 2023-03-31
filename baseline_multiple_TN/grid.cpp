@@ -180,10 +180,10 @@ void Grid::stage2_global() {
   // create a list(vector) of users, users[i] is user index
   std::vector<std::vector<int>> users;
   users.push_back(A_index);
-  users.push_back(B_index);
   for(int i=0; i<T_indices.size(); i++) {
     users.push_back(T_indices[i]);
   }
+  users.push_back(B_index);
 
   // create a global path pool including all the paths.
   std::vector<std::vector<int>> global_paths;
