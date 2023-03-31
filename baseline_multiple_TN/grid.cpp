@@ -183,7 +183,7 @@ void Grid::stage2_global() {
   for(int i=0; i<T_indices.size(); i++) {
     users.push_back(T_indices[i]);
   }
-  users.push_back(B_index);
+  users.push_back(B_index); // B should be the last cuz it is always the sink
 
   // create a global path pool including all the paths.
   std::vector<std::vector<int>> global_paths;
@@ -200,7 +200,13 @@ void Grid::stage2_global() {
       global_paths.insert(global_paths.end(), path_st.begin(), path_st.end());
     }
   }
-  SS.resize(SS_size); // SS_size = number of user pairs, SS[i] is a vector that stores all the paths from one user pair 
+  // for SS[i][j], the 1st dimension of SS stands for the Ti,
+  // the 2nd dimension of SS stands for Tj
+  // SS[i][j] is a vector that stores the lengths of all the paths between Ti and Tj
+  SS.resize(SS_size);  
+  for(auto& row : SS) {
+    row.resize(SS_size);
+  }
 
   /*
    * second, recurrsively find the shortest path and delete it from the grid
@@ -219,6 +225,14 @@ void Grid::stage2_global() {
           shortest_index = i;
         }
     }
+
+    // get the role of source and sink node in the shortest path
+    int head = shortest[0];
+    int tail = shortest[shortest.size() - 1];
+    std::vector<int> head_coor = int2coordinate(head, grid_size);
+    std::vector<int> tail_coor = int2coordinate(tail, grid_size);
+    int head_role = node_grid_per_round[head_coor[0]][head_coor[1]].role; 
+    int tail_role = node_grid_per_round[tail_coor[0]][tail_coor[1]].role; 
 
     // before we mark edges_per_round along the shortest path visited
     // we need to traverse the shortest path to see if there is any edge 
@@ -257,10 +271,12 @@ void Grid::stage2_global() {
     }
     std::cout << "\n\n";
 
-    // put shortest path into the corresponding SS before we erase it
-    for(int i=0; i<SS.size(); i++) {
-    }      
-  
+    // put shortest path length into the corresponding SS before we erase it
+    // according to the role of source and sink node
+    // role: A(1), B(2), T1(3), T2(4), ....
+    // To fit into SS index, role need to -1
+    // also shortest.size() - 1 cuz it counts the number of nodes
+    SS[head_role-1][tail_role-1].push_back(shortest.size()-1);
 
     next_shortest:
       // delete this path from global path

@@ -72,7 +72,7 @@ class Grid {
      */
     void stage2_global();
 
- private:
+// private:
     // node grid
     // format: node_grid_per_round[row][col] stands for the node in row-1 row and col-1 col
     std::vector<std::vector<Node>> node_grid; // original node_grid
@@ -99,10 +99,10 @@ class Grid {
     double P;
 
     // shared state buffer
-    // SSij means a shared state buffer between Ti and Tj
-    // An entry in SS stores the length of a path
-    // e.g., SSij[0] = 8, the first path between Ti and Tj has a length of 8
-    std::vector<std::vector<int>> SS; // SS will be assigned in stage 2 when needed
+    // for SS[i][j], the 1st dimension of SS stands for the Ti,
+    // the 2nd dimension of SS stands for Tj
+    // SS[i][j] is a vector that stores the lengths of all the paths between Ti and Tj
+    std::vector<std::vector<std::vector<int>>> SS; // SS will be assigned in stage 2 when needed 
 };
 
 
