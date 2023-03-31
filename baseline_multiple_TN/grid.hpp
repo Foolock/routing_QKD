@@ -10,18 +10,67 @@
 class Grid {
   public:
     /** 
-     * @brief: place Alice(1), Bob(2), TN(3) and initialize Da, Db, Dt for each node
-     * Assume only one TN
+     * @brief: place Alice(1), Bob(2), TNs(3,4,...) and initialize Da, Db, Dt1, Dt2, ... for each node
      *
      * input:
      *  TN_location: location of TNs
      *  N: size of the grid
      *  P: success rate of bell state transmission in fiber channel(edge)
      * return(void): 
-     *  initialize grid_size, node_grid_per_round, A_index, B_index, C_index, edges_per_round(inter edge adjacent list)
+     *  initialize grid_size, node_grid_per_round, A_index, B_index, T_indices, edges_per_round(inter edge adjacent list)
      *  and P(success rate of fiber channel transmission
      */
     Grid(std::vector<std::vector<int>>& TN_locations, int N, double P);
+
+    /**
+     * @brief: display the node grid
+     */
+    void display();
+
+    /** 
+     * @brief: helper: add edge when initialize adjacent list edges_per_round
+     *
+     * input:
+     *  curr_row, curr_col: current node's row and col index
+     *  neighbor_row, neighbor_col: neighbor node's row and col index 
+     *  direction: neighbor's direction from curr: 0 = uppper, 1 = left, 2 = right, 3 = bottom
+     * return(void):
+     *  added edges_per_round are stored in temp_edges, also node that are connected with edges_per_round are updated(its direction vector)
+     *  in the temp_node_grid
+     */
+    void addEdge(
+      int cur_row, int cur_col,
+      int neighbor_row, int neighbor_col,
+      int direction,
+      std::vector<std::vector<Node>>& temp_node_grid,
+      std::vector<std::vector<Edge>>& temp_edges);
+
+    /**
+     * @brief: break edge: break edge in adjacent list edges_per_round
+     *
+     * curr_row, curr_col: index of current node
+     * direction: neighbor's direction from curr: 0 = uppper, 1 = left, 2 = right, 3 = bottom
+     * return(void): 
+     *  change direction in edges_per_round to -1 for broken nodes, change direction of nodes in node_grid_per_round to false
+     */
+    void breakEdge(int curr_row, int curr_col, int direction);
+
+    /**
+     * @brief: stage 1: intialize inter link with a success rate = P
+     *  i.e., break edges_per_round with a rate = 1-P
+     */
+    void stage1();
+
+    /**
+     * @brief: stage 2: (global routing) create intra link with a success rate = R
+     * according to the node grid from stage 1
+     *
+     * global routing search for shortest path for each pair A->B, A->T, T->B
+     * then construct the intra link along that path. then record it to SS. then delete it
+     * 
+     * it will keep traversing path until there is no path available between all user.
+     */
+    void stage2_global();
 
  private:
     // node grid
@@ -33,9 +82,9 @@ class Grid {
     int grid_size;
 
     // location of A, B, T
-    // At default, Alice is placed at left bottom corner, Bob is placed at right upper corner
-    std::vector<int> A_index = {grid_size-1, 0};
-    std::vector<int> B_index = {0, grid_size-1};
+    // At default, Alice and Bob is placed at diag location shown in paper 
+    std::vector<int> A_index = {grid_size-2, 1};
+    std::vector<int> B_index = {1, grid_size-2};
     std::vector<std::vector<int>> T_indices;
 
     // adjacent list to represent edges_per_round in the grid
@@ -49,19 +98,11 @@ class Grid {
     // success rate of bell state transmission in fiber channel(edge)
     double P;
 
-    // raw key pool (implemented as counter)
-    int RKab = 0;
-    int RKat = 0;
-    int RKtb = 0;
-
     // shared state buffer
-    // SSab means a shared state buffer between Alice and Bob
+    // SSij means a shared state buffer between Ti and Tj
     // An entry in SS stores the length of a path
-    // e.g., SSab[0] = 8, the first path between Alice and Bob has a length of 8
-    std::vector<int> SSab;
-    std::vector<int> SSat;
-    std::vector<int> SStb;
-
+    // e.g., SSij[0] = 8, the first path between Ti and Tj has a length of 8
+    std::vector<std::vector<int>> SS; // SS will be assigned in stage 2 when needed
 };
 
 
