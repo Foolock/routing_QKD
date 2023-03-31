@@ -1,5 +1,6 @@
 #include "grid.hpp"
 #include "utility.hpp"
+#include <iomanip>
 
 /** 
  * @brief: place Alice(1), Bob(2), TNs(3,4,...) and initialize Da, Db, Dt1, Dt2, ... for each node
@@ -66,7 +67,19 @@ void Grid::display() {
   std::cout << "this is the current grid(with edges_per_round): \n\n";
   for(int i=0; i<grid_size; i++) {
     for(int j=0; j<grid_size; j++) {
-      std::cout << node_grid_per_round[i][j].role;
+      if(node_grid[i][j].role == 1) {
+        std::cout << std::setfill('0') << std::setw(2) << "\033[32m"  << i*grid_size+j << "\033[0m";
+      
+      }
+      else if(node_grid[i][j].role == 2) {
+        std::cout << std::setfill('0') << std::setw(2) << "\033[32m"  << i*grid_size+j << "\033[0m";
+      }
+      else if(node_grid[i][j].role == 0) {
+        std::cout << std::setfill('0') << std::setw(2) << i*grid_size+j;
+      }
+      else {
+        std::cout << std::setfill('0') << std::setw(2) << "\033[31m"  << i*grid_size+j << "\033[0m";
+      }
       if(node_grid_per_round[i][j].direction[2]) {std::cout << "--";}
       else {std::cout << "  ";}
     }
@@ -74,8 +87,8 @@ void Grid::display() {
     // before it print next row of grid
     // check if current row node have some connect with next row
     for(int j=0; j<grid_size; j++) {
-      if(node_grid_per_round[i][j].direction[3]) {std::cout << "|  ";}
-      else {std::cout << "   ";}
+      if(node_grid_per_round[i][j].direction[3]) {std::cout << "|   ";}
+      else {std::cout << "    ";}
     }
     std::cout << "\n";
   }
