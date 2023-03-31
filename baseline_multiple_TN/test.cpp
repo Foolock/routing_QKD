@@ -20,6 +20,7 @@ int main() {
   grid.display();
 
   grid.stage2_global();
+//  grid.stage2_local_IA();
 
   std::cout << "the paths found between A and T1: ";
   for(auto p : grid.SS[0][2]) {

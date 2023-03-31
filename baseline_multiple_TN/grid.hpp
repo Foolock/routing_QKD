@@ -27,8 +27,14 @@ class Grid {
      */
     void display();
 
+    /**
+     * @brief: reset edges_per_round[] and node_grid_per_round[] as its original copy
+     *
+     */
+    void reset();
+
     /** 
-     * @brief: helper: add edge when initialize adjacent list edges_per_round
+     * @brief: add inter edge when initialize adjacent list edges_per_round
      *
      * input:
      *  curr_row, curr_col: current node's row and col index
@@ -46,7 +52,7 @@ class Grid {
       std::vector<std::vector<Edge>>& temp_edges);
 
     /**
-     * @brief: break edge: break edge in adjacent list edges_per_round
+     * @brief: break inter edge: break edge in adjacent list edges_per_round
      *
      * curr_row, curr_col: index of current node
      * direction: neighbor's direction from curr: 0 = uppper, 1 = left, 2 = right, 3 = bottom
@@ -54,6 +60,24 @@ class Grid {
      *  change direction in edges_per_round to -1 for broken nodes, change direction of nodes in node_grid_per_round to false
      */
     void breakEdge(int curr_row, int curr_col, int direction);
+
+    /**
+     * @brief: add intra link 
+     * 
+     * input:
+     *  x, y: index(coordinate) of a node in the node grid
+     *  q1, q2: index of 2 qubits to construct intra link.
+     *  0 = uppper, 1 = left, 2 = right, 3 = bottom
+     */
+    void addIntraEdge(int x, int y, int q1, int q2);
+
+    /**
+     * @brief: break intra link
+     * 
+     * input:
+     *  x, y: index(coordinate) of a node in the node grid
+     */
+    void breakIntraEdge(int x, int y);
 
     /**
      * @brief: stage 1: intialize inter link with a success rate = P
@@ -72,6 +96,20 @@ class Grid {
      */
     void stage2_global();
 
+    /**
+     * @brief: stage 2: (local routing: IA algorithm) create intra link with a success rate = R
+     * according to the node grid from stage 1
+     * 
+     * IA local routing traverse the node_grid to check their qubits
+     * if only 1 qubits available, does nothing 
+     * if 2 qubits available, connect this 2 qubits
+     * if 3 qubits available, connect 2 qubits with IA (compare Dab, Dat, Dtb for 2 options, connect the 2 qubits 
+     * with the min D among {Dab, Dat, Dtb for option 1 and Dab, Dat, Dtb for option 2}, IA means when there 
+     * is tie, prefer vertical or horizontal intra link
+     * if 4 qubits available, connect the 2 qubits first with IA, then connect the rest 2 
+     */
+    void stage2_local_IA();
+
 // private:
     // node grid
     // format: node_grid_per_round[row][col] stands for the node in row-1 row and col-1 col
@@ -86,6 +124,10 @@ class Grid {
     std::vector<int> A_index = {grid_size-2, 1};
     std::vector<int> B_index = {1, grid_size-2};
     std::vector<std::vector<int>> T_indices;
+
+    // create a list(vector) of users, users[i] is user index
+    std::vector<std::vector<int>> users;
+
 
     // adjacent list to represent edges_per_round in the grid
     // format: edges_per_round[grid_size*grid_size][4]

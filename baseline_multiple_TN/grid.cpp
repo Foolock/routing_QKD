@@ -25,6 +25,28 @@ Grid::Grid(std::vector<std::vector<int>>& TN_locations, int N, double P):
   // initialze distance to Alice, Bob and multiple TNs for each node
   calDistanceToABTs(grid_size, A_index, B_index, T_indices, temp_node_grid);
 
+  // initialize user node list
+  users.push_back(A_index);
+  for(int i=0; i<T_indices.size(); i++) {
+    users.push_back(T_indices[i]);
+  }
+  users.push_back(B_index); // B should be the last cuz it is always the sink
+
+  // initialize shared status buffer size
+  int SS_size = 0; // size of shared states buffer
+  for(int i=0; i<users.size() - 1; i++) {
+    for(int j=i+1; j<users.size(); j++) {
+      SS_size ++;
+    }
+  }
+  // for SS[i][j], the 1st dimension of SS stands for the Ti,
+  // the 2nd dimension of SS stands for Tj
+  // SS[i][j] is a vector that stores the lengths of all the paths between Ti and Tj
+  SS.resize(SS_size);
+  for(auto& row : SS) {
+    row.resize(SS_size);
+  }
+
   // check if distance results are correct
 //  std::vector<int> result;
 //  for(int i=0; i<N; i++) {
@@ -57,6 +79,8 @@ Grid::Grid(std::vector<std::vector<int>>& TN_locations, int N, double P):
   node_grid = node_grid_per_round;
   edges_per_round = temp_edges;
   edges = edges_per_round;
+
+
 }
 
 /**
@@ -94,6 +118,14 @@ void Grid::display() {
   }
 
 
+}
+
+/**
+ * @brief: reset edges_per_round[] and node_grid_per_round[] as its original copy
+ */
+void Grid::reset() {
+  edges_per_round = edges;
+  node_grid_per_round = node_grid;
 }
 
 /** 
@@ -148,6 +180,29 @@ void Grid::breakEdge(int curr_row, int curr_col, int direction) {
 }
 
 /**
+ * @brief: add intra link 
+ */
+void Grid::addIntraEdge(int x, int y, int q1, int q2) {
+  
+  node_grid_per_round[x][y].qubits[q1].to = q2;
+  node_grid_per_round[x][y].qubits[q2].to = q1;
+
+}
+
+/**
+ * @brief: break intra link
+ */
+void Grid::breakIntraEdge(int x, int y) {
+  if(node_grid_per_round[x][y].role = 0) {
+    std::cerr << "error: you cannot break the intra link of a router.\n";
+    std::exit(EXIT_FAILURE);
+  }
+  for(int q=0; q<4; q++) {
+    node_grid_per_round[x][y].qubits[q].to = -1;
+  }
+}
+
+/**
  * @brief: stage 1: intialize inter link with a success rate = P
  */
 void Grid::stage1() {
@@ -176,23 +231,13 @@ void Grid::stage2_global() {
   /*
    * first, we need to find the shortest path (in hops) between any pair of nodes in {Alice, Bob and TNs}  
    */
- 
-  // create a list(vector) of users, users[i] is user index
-  std::vector<std::vector<int>> users;
-  users.push_back(A_index);
-  for(int i=0; i<T_indices.size(); i++) {
-    users.push_back(T_indices[i]);
-  }
-  users.push_back(B_index); // B should be the last cuz it is always the sink
 
   // create a global path pool including all the paths.
   std::vector<std::vector<int>> global_paths;
 
   // for each pair in users, use bfs to get available paths
-  int SS_size = 0; // size of shared states buffer
   for(int i=0; i<users.size() - 1; i++) {
     for(int j=i+1; j<users.size(); j++) {
-      SS_size ++;
       int s = users[i][0]*grid_size + users[i][1];   
       int t = users[j][0]*grid_size + users[j][1];
       std::vector<std::vector<int>> path_st = bfs(s, t, node_grid_per_round, edges_per_round, grid_size);
@@ -200,14 +245,7 @@ void Grid::stage2_global() {
       global_paths.insert(global_paths.end(), path_st.begin(), path_st.end());
     }
   }
-  // for SS[i][j], the 1st dimension of SS stands for the Ti,
-  // the 2nd dimension of SS stands for Tj
-  // SS[i][j] is a vector that stores the lengths of all the paths between Ti and Tj
-  SS.resize(SS_size);  
-  for(auto& row : SS) {
-    row.resize(SS_size);
-  }
-
+  
   /*
    * second, recurrsively find the shortest path and delete it from the grid
    * by marking them as visited until there is no available path
@@ -287,7 +325,91 @@ void Grid::stage2_global() {
 }
 
 
+/**
+ * @brief: stage 2: (local routing: IA algorithm) create intra link with a success rate = R
+ * according to the node grid from stage 1
+ */
+void Grid::stage2_local_IA() {
 
+  /*
+   * first, we need to traverse the graph and calculate how many qubits are available for each node
+   */
+  
+  // create a vector to store which qubits are available in qubits of the node
+  std::vector<int> available_q;
+
+  std::vector<int> connect_q;
+
+  for(int row=0; row<grid_size; row++) {
+    for(int col=0; col<grid_size; col++) {
+      // for each node in the node_grid
+
+      // empty available qubits vector first(it may have result from last itertaion
+      available_q.clear();
+
+      // traverse the qubits of node get available qubits
+      for(int i=0; i<4; i++) {
+        if(node_grid_per_round[row][col].qubits[i].available) {
+          available_q.push_back(i);
+        }
+      }
+
+      // if num == 2, connect the 2 available qubits 
+      if(available_q.size() == 2) {
+        // connect intra link between these 2 qubits
+        addIntraEdge(row, col, available_q[0], available_q[1]);
+      }
+      // if num == 3, connect the 2 qubits with min D
+      else if(available_q.size() == 3) {
+        // get the 2 qubits that needs to connect
+        connect_q = find2qubits_IA(row, col, available_q, node_grid_per_round, edges_per_round, grid_size);
+           
+        // connect intra link between these 2 qubits
+        addIntraEdge(row, col, connect_q[0], connect_q[1]);
+      }
+      else if(available_q.size() == 4) {
+        // get the 2 qubits that needs to connect
+        connect_q = find2qubits_IA(row, col, available_q, node_grid_per_round, edges_per_round, grid_size);
+
+        // connect intra link between these 2 qubits
+        addIntraEdge(row, col, connect_q[0], connect_q[1]);
+      
+        // also connect the 2 remaining qubits
+        std::vector<int> remain_q;
+        std::sort(available_q.begin(), available_q.end());
+        std::sort(connect_q.begin(), connect_q.end());
+        remain_q.reserve(available_q.size());
+        std::set_difference(available_q.begin(), available_q.end(), connect_q.begin(), connect_q.end(), std::back_inserter(remain_q));
+
+        addIntraEdge(row, col, remain_q[0], remain_q[1]);
+        
+      }
+    }
+  }
+
+  /*
+   * second, find paths through the connect inter and intra links
+   */
+
+  // before you find paths
+  // you need to break all the intra links of A, B, Ts in case in dfs you will stuck in loop
+  breakIntraEdge(A_index[0], A_index[1]);
+  breakIntraEdge(B_index[0], B_index[1]);
+  for(int i=0; i<T_indices.size(); i++) {
+    breakIntraEdge(T_indices[i][0], T_indices[i][1]);    
+  }
+
+  // to find the path, we can use dfs cuz the links have been fixed, i.e., we cannot make choices
+  std::vector<std::vector<int>> paths = getPathsDFS(
+      node_grid_per_round,
+      edges_per_round,
+      grid_size,
+      users // users = index(in coordinate) of {A, T1, T2, ..., B} 
+      ); 
+
+
+
+}
 
 
 
