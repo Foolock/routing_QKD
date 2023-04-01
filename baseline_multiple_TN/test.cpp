@@ -18,48 +18,58 @@ int main() {
   std::cout << "after stage1: \n";
   grid.display();
 
-//  grid.stage2_global();
+  grid.stage2_global();
   grid.stage2_local_IA();
 
-  std::cout << "the paths found between A and T1: ";
-  for(auto p : grid.SS[0][2]) {
-    std::cout << p << " ";
+  // get 100 simples: compare the performance of Global and Local routing
+  int num_sample = 100;
+  for(int i=0; i<num_sample; i++) {
+    grid.stage1();
+    grid.stage2_global();
+    grid.stage2_local_IA();
+    grid.reset(); 
   }
-  std::cout << "\n";
 
-  std::cout << "the paths found between A and T2: ";
-  for(auto p : grid.SS[0][3]) {
-    std::cout << p << " ";
-  }
-  std::cout << "\n";
+  std::cout << "Global routing: \n";
+  std::cout << "the num of paths found between A and T1: ";
+  std::cout << grid.SS_global[0][2].size() << "\n";
 
-  std::cout << "the paths found between A and B: ";
-  for(auto p : grid.SS[0][1]) {
-    std::cout << p << " ";
-  }
-  std::cout << "\n";
+  std::cout << "the num of paths found between A and T2: ";
+  std::cout << grid.SS_global[0][3].size() << "\n";
 
-  std::cout << "the paths found between T1 and T2: ";
-  for(auto p : grid.SS[2][3]) {
-    std::cout << p << " ";
-  }
-  std::cout << "\n";
+  std::cout << "the num of paths found between A and B: ";
+  std::cout << grid.SS_global[0][1].size() << "\n";
+
+  std::cout << "the num of paths found between T1 and T2: ";
+  std::cout << grid.SS_global[2][3].size() << "\n";
+
+  std::cout << "the num of paths found between T1 and B: ";
+  std::cout << grid.SS_global[2][1].size() << "\n";
+
+  std::cout << "the num of paths found between T2 and B: ";
+  std::cout << grid.SS_global[3][1].size() << "\n";
+  
+  std::cout << "Local routing: \n";
+  std::cout << "the num of paths found between A and T1: ";
+  std::cout << grid.SS_local[0][2].size() << "\n";
+
+  std::cout << "the num of paths found between A and T2: ";
+  std::cout << grid.SS_local[0][3].size() << "\n";
+
+  std::cout << "the num of paths found between A and B: ";
+  std::cout << grid.SS_local[0][1].size() << "\n";
+
+  std::cout << "the num of paths found between T1 and T2: ";
+  std::cout << grid.SS_local[2][3].size() << "\n";
+
+  std::cout << "the num of paths found between T1 and B: ";
+  std::cout << grid.SS_local[2][1].size() << "\n";
+
+  std::cout << "the num of paths found between T2 and B: ";
+  std::cout << grid.SS_local[3][1].size() << "\n";
+  
 
 
-  std::cout << "the paths found between T1 and B: ";
-  for(auto p : grid.SS[2][1]) {
-    std::cout << p << " ";
-  }
-  std::cout << "\n";
-
-
-  std::cout << "the paths found between T2 and B: ";
-  for(auto p : grid.SS[3][1]) {
-    std::cout << p << " ";
-  }
-  std::cout << "\n";
-
-  grid.displayNodeStatus();
 
   return 0;
 }

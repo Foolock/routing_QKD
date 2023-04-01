@@ -42,11 +42,16 @@ Grid::Grid(std::vector<std::vector<int>>& TN_locations, int N, double P):
   // for SS[i][j], the 1st dimension of SS stands for the Ti,
   // the 2nd dimension of SS stands for Tj
   // SS[i][j] is a vector that stores the lengths of all the paths between Ti and Tj
-  SS.resize(SS_size);
-  for(auto& row : SS) {
+  SS_global.resize(SS_size);
+  for(auto& row : SS_global) {
     row.resize(SS_size);
   }
   
+  SS_local.resize(SS_size);
+  for(auto& row : SS_local) {
+    row.resize(SS_size);
+  }
+
   // check if distance results are correct
 //  std::vector<int> result;
 //  for(int i=0; i<N; i++) {
@@ -357,18 +362,20 @@ void Grid::stage2_global() {
     }
 
     // print this path before we erase it
+    /*
     std::cout << "found shortest path: \n";
     for(int i=0; i<shortest.size(); i++) {
       std::cout << shortest[i] << " -- ";    
     }
     std::cout << "\n\n";
-
+    */
+    
     // put shortest path length into the corresponding SS before we erase it
     // according to the role of source and sink node
     // role: A(1), B(2), T1(3), T2(4), ....
     // To fit into SS index, role need to -1
     // also shortest.size() - 1 cuz it counts the number of nodes
-    SS[head_role-1][tail_role-1].push_back(shortest.size()-1);
+    SS_global[head_role-1][tail_role-1].push_back(shortest.size()-1);
 
     next_shortest:
       // delete this path from global path
@@ -469,11 +476,13 @@ void Grid::stage2_local_IA() {
     if(paths[i].size() != 0) {
       
       // print the path
+      /*
       std::cout << "found paths: \n";
       for(int j=0; j<paths[i].size(); j++) {
         std::cout << paths[i][j] << " -- "; 
       }
       std::cout << "\n\n";
+      */
 
       int head = paths[i][0];
       int tail = paths[i][paths[i].size() - 1];
@@ -484,7 +493,7 @@ void Grid::stage2_local_IA() {
       // role: A(1), B(2), T1(3), T2(4), ....
       // To fit into SS index, role need to -1
       // also shortest.size() - 1 cuz it counts the number of nodes
-      SS[head_role-1][tail_role-1].push_back(paths[i].size()-1);
+      SS_local[head_role-1][tail_role-1].push_back(paths[i].size()-1);
     }
   }
 

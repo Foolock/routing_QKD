@@ -149,7 +149,8 @@ class Grid {
     // for SS[i][j], the 1st dimension of SS stands for the Ti,
     // the 2nd dimension of SS stands for Tj
     // SS[i][j] is a vector that stores the lengths of all the paths between Ti and Tj
-    std::vector<std::vector<std::vector<int>>> SS; // SS will be assigned in stage 2 when needed 
+    std::vector<std::vector<std::vector<int>>> SS_global; // SS_global will be assigned in stage 2 global  
+    std::vector<std::vector<std::vector<int>>> SS_local; // SS_local will be assigned in stage 2 local 
 };
 
 
