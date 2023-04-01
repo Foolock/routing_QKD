@@ -46,7 +46,7 @@ Grid::Grid(std::vector<std::vector<int>>& TN_locations, int N, double P):
   for(auto& row : SS) {
     row.resize(SS_size);
   }
-
+  
   // check if distance results are correct
 //  std::vector<int> result;
 //  for(int i=0; i<N; i++) {
@@ -246,7 +246,7 @@ void Grid::addIntraEdge(int x, int y, int q1, int q2) {
  * @brief: break intra link
  */
 void Grid::breakIntraEdge(int x, int y) {
-  if(node_grid_per_round[x][y].role = 0) {
+  if(node_grid_per_round[x][y].role == 0) {
     std::cerr << "error: you cannot break the intra link of a router.\n";
     std::exit(EXIT_FAILURE);
   }
@@ -458,25 +458,38 @@ void Grid::stage2_local_IA() {
       node_grid_per_round,
       edges_per_round,
       grid_size,
-      users // users = index(in coordinate) of {A, T1, T2, ..., B} 
+      users, // users = index(in coordinate) of {A, T1, T2, ..., B} 
+      this
       ); 
 
   /*
    * finally, push back the path length to the corresponding SS
    */
-  
   for(int i=0; i<paths.size(); i++) {
-    int head = paths[i][0];
-    int tail = paths[i][paths[i].size() - 1];
-    std::vector<int> head_coor = int2coordinate(head, grid_size);
-    std::vector<int> tail_coor = int2coordinate(tail, grid_size);
-    int head_role = node_grid_per_round[head_coor[0]][head_coor[1]].role;
-    int tail_role = node_grid_per_round[tail_coor[0]][tail_coor[1]].role; 
-    // role: A(1), B(2), T1(3), T2(4), ....
-    // To fit into SS index, role need to -1
-    // also shortest.size() - 1 cuz it counts the number of nodes
-    SS[head_role-1][tail_role-1].push_back(paths[i].size()-1);
-  } 
+    if(paths[i].size() != 0) {
+      
+      // print the path
+      std::cout << "found paths: \n";
+      for(int j=0; j<paths[i].size(); j++) {
+        std::cout << paths[i][j] << " -- "; 
+      }
+      std::cout << "\n\n";
+
+      int head = paths[i][0];
+      int tail = paths[i][paths[i].size() - 1];
+      std::vector<int> head_coor = int2coordinate(head, grid_size);
+      std::vector<int> tail_coor = int2coordinate(tail, grid_size);
+      int head_role = node_grid_per_round[head_coor[0]][head_coor[1]].role;
+      int tail_role = node_grid_per_round[tail_coor[0]][tail_coor[1]].role; 
+      // role: A(1), B(2), T1(3), T2(4), ....
+      // To fit into SS index, role need to -1
+      // also shortest.size() - 1 cuz it counts the number of nodes
+      SS[head_role-1][tail_role-1].push_back(paths[i].size()-1);
+    }
+  }
+
+  // print the paths
+
 
 }
 

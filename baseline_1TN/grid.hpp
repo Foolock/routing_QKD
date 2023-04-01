@@ -762,7 +762,7 @@ void Grid::addIntraEdge(int x, int y, int q1, int q2) {
  *  x, y: index(coordinate) of a node in the node grid
  */
 void Grid::breakIntraEdge(int x, int y) {
-  if(node_grid_per_round[x][y].role = 0) {
+  if(node_grid_per_round[x][y].role == 0) {
     std::cerr << "error: you cannot break the intra link of a router.\n";
     std::exit(EXIT_FAILURE);
   }

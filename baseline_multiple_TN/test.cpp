@@ -20,45 +20,46 @@ int main() {
 
 //  grid.stage2_global();
   grid.stage2_local_IA();
-//
-//  std::cout << "the paths found between A and T1: ";
-//  for(auto p : grid.SS[0][2]) {
-//    std::cout << p << " ";
-//  }
-//  std::cout << "\n";
-//
-//  std::cout << "the paths found between A and T2: ";
-//  for(auto p : grid.SS[0][3]) {
-//    std::cout << p << " ";
-//  }
-//  std::cout << "\n";
-//
-//  std::cout << "the paths found between A and B: ";
-//  for(auto p : grid.SS[0][1]) {
-//    std::cout << p << " ";
-//  }
-//  std::cout << "\n";
-//
-//  std::cout << "the paths found between T1 and T2: ";
-//  for(auto p : grid.SS[2][3]) {
-//    std::cout << p << " ";
-//  }
-//  std::cout << "\n";
-//
-//
-//  std::cout << "the paths found between T1 and B: ";
-//  for(auto p : grid.SS[2][1]) {
-//    std::cout << p << " ";
-//  }
-//  std::cout << "\n";
-//
-//
-//  std::cout << "the paths found between T2 and B: ";
-//  for(auto p : grid.SS[3][1]) {
-//    std::cout << p << " ";
-//  }
-//  std::cout << "\n";
-//
+
+  std::cout << "the paths found between A and T1: ";
+  for(auto p : grid.SS[0][2]) {
+    std::cout << p << " ";
+  }
+  std::cout << "\n";
+
+  std::cout << "the paths found between A and T2: ";
+  for(auto p : grid.SS[0][3]) {
+    std::cout << p << " ";
+  }
+  std::cout << "\n";
+
+  std::cout << "the paths found between A and B: ";
+  for(auto p : grid.SS[0][1]) {
+    std::cout << p << " ";
+  }
+  std::cout << "\n";
+
+  std::cout << "the paths found between T1 and T2: ";
+  for(auto p : grid.SS[2][3]) {
+    std::cout << p << " ";
+  }
+  std::cout << "\n";
+
+
+  std::cout << "the paths found between T1 and B: ";
+  for(auto p : grid.SS[2][1]) {
+    std::cout << p << " ";
+  }
+  std::cout << "\n";
+
+
+  std::cout << "the paths found between T2 and B: ";
+  for(auto p : grid.SS[3][1]) {
+    std::cout << p << " ";
+  }
+  std::cout << "\n";
+
+  grid.displayNodeStatus();
 
   return 0;
 }

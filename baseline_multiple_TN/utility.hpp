@@ -128,7 +128,8 @@ std::vector<std::vector<int>> getPathsDFS(
     std::vector<std::vector<Node>> node_grid_per_round,
     std::vector<std::vector<Edge>> edges_per_round,
     int grid_size,
-    std::vector<std::vector<int>> users // users = index(in coordinate) of {A, T1, T2, ..., B} 
+    std::vector<std::vector<int>> users, // users = index(in coordinate) of {A, T1, T2, ..., B} 
+    Grid* grid
     );
 
 /**
@@ -310,27 +311,34 @@ std::vector<int> find2qubits_IA(int curr_r, int curr_c, std::vector<int> availab
 
   // for each neighbor pair, calculate Dij (distance between each Ti, Tj)
   // select the 2 neighbor with the minimum Dij
-  std::vector<std::vector<int>> smallest_D_neighbors{{-1, -1}}; // make it a 2-D vector cuz there may be multiple smallest neighbor
-  int smallest_D = INT_MAX;
+  std::vector<std::vector<int>> smallest_D_neighbors; // make it a 2-D vector cuz there may be multiple smallest neighbor
+  int smallest_D = INT_MAX; // smallest distance among all pairs
+  int smallest_D_each_pair = INT_MAX; // smallest distance between each pair
   int temp_D = 0;
   int num_D = node_grid_per_round[0][0].D.size(); // get the total number of D of a node 
   for(int i=0; i<num_neighbor-1; i++) {
     for(int j=i+1; j<num_neighbor; j++) {
-      // for each pair of neighbor
+      // for each pair of neighbor, get their smallest distance
       for(int k1=0; k1<num_D; k1++) {
         for(int k2=0; k2<num_D; k2++) {
           if(k2 != k1) {
             temp_D = node_grid_per_round[neighbor_coor[i][0]][neighbor_coor[i][1]].D[k1] +
-                      node_grid_per_round[neighbor_coor[j][0]][neighbor_coor[j][1]].D[k1];
-            if(temp_D < smallest_D) {
-              smallest_D = temp_D;
-              smallest_D_neighbors[0] = {neighbor[i], neighbor[j]};
-            }
-            else if(temp_D = smallest_D) {
-              smallest_D_neighbors.push_back({neighbor[i], neighbor[j]});
+                      node_grid_per_round[neighbor_coor[j][0]][neighbor_coor[j][1]].D[k2];
+            if(temp_D < smallest_D_each_pair) {
+              smallest_D_each_pair = temp_D;
             }
           }
         }
+      }
+      
+      // get the smallest distance among all pairs of users
+      if(smallest_D_each_pair < smallest_D) {
+        smallest_D = smallest_D_each_pair;
+        smallest_D_neighbors.clear();
+        smallest_D_neighbors.push_back({neighbor[i], neighbor[j]});
+      }
+      else if(smallest_D_each_pair == smallest_D){
+        smallest_D_neighbors.push_back({neighbor[i], neighbor[j]});
       }
     }
   }
@@ -442,7 +450,8 @@ std::vector<std::vector<int>> getPathsDFS(
     std::vector<std::vector<Node>> node_grid_per_round,
     std::vector<std::vector<Edge>> edges_per_round,
     int grid_size,
-    std::vector<std::vector<int>> users // users = index(in coordinate) of {A, T1, T2, ..., B} 
+    std::vector<std::vector<int>> users, // users = index(in coordinate) of {A, T1, T2, ..., B} 
+    Grid* grid
     ) {
 
   // a 2-d vector result to store all the paths
@@ -471,7 +480,8 @@ std::vector<std::vector<int>> getPathsDFS(
             edges_per_round,
             grid_size
             );
-          if(end_node == s) {
+          end_node = path.back();
+          if(end_node == t) {
             result.push_back(path);
           }
           path.clear();
@@ -479,7 +489,7 @@ std::vector<std::vector<int>> getPathsDFS(
       }
     }
   }
-
+  
   return result;
 
 }
