@@ -20,7 +20,7 @@ class Grid {
      *  initialize grid_size, node_grid_per_round, A_index, B_index, T_indices, edges_per_round(inter edge adjacent list)
      *  and P(success rate of fiber channel transmission
      */
-    Grid(std::vector<std::vector<int>>& TN_locations, int N, double P);
+    Grid(std::vector<std::vector<int>>& TN_locations, int N, double P, double B, double D);
 
     /**
      * @brief: display the node grid
@@ -115,6 +115,15 @@ class Grid {
      */
     void stage2_local_IA();
 
+    /**
+     * @brief: construct network flow graph and get the maximum flow value
+     *  1. transform SS to RK
+     *  2. transform RK to SK
+     *  3. based on SK(capacity), construct network flow graph
+     *  4. adapt ford-fulkerson to solve a maximum flow 
+     */
+    int getMaxFlow(std::vector<std::vector<std::vector<int>>> SS);
+
 // private:
     // node grid
     // format: node_grid_per_round[row][col] stands for the node in row-1 row and col-1 col
@@ -142,8 +151,14 @@ class Grid {
     std::vector<std::vector<Edge>> edges; // original initialized edges
     std::vector<std::vector<Edge>> edges_per_round; // edges copy per round
 
-    // success rate of bell state transmission in fiber channel(edge)
+    // success rate of bell state transmission in fiber channel(inter edge)
     double P;
+
+    // success rate of bell swap within the node(intra edge)
+    double B;
+
+    // decoherence rate of bell pair transmission in fiber channel
+    double D;
 
     // shared state buffer
     // for SS[i][j], the 1st dimension of SS stands for the Ti,
@@ -151,6 +166,17 @@ class Grid {
     // SS[i][j] is a vector that stores the lengths of all the paths between Ti and Tj
     std::vector<std::vector<std::vector<int>>> SS_global; // SS_global will be assigned in stage 2 global  
     std::vector<std::vector<std::vector<int>>> SS_local; // SS_local will be assigned in stage 2 local 
+
+    // raw key pool
+    // for RK[i][j], the 1st dimension of SS stands for the Ti,
+    // the 2nd dimension of SS stands for Tj
+    // SS[i][j] is a vector that stores the lengths of all the paths between Ti and Tj
+    std::vector<std::vector<int>> RK;
+
+    // secret key pool
+    // format same as RK
+    std::vector<std::vector<int>> SK;
+
 };
 
 

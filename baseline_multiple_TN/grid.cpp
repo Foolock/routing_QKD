@@ -1,14 +1,17 @@
 #include "grid.hpp"
 #include "utility.hpp"
 #include <iomanip>
+#include <cmath>
 
 /** 
  * @brief: place Alice(1), Bob(2), TNs(3,4,...) and initialize Da, Db, Dt1, Dt2, ... for each node
  */
-Grid::Grid(std::vector<std::vector<int>>& TN_locations, int N, double P): 
+Grid::Grid(std::vector<std::vector<int>>& TN_locations, int N, double P, double B, double D): 
   grid_size(N), 
   T_indices(TN_locations), 
-  P(P)
+  P(P),
+  B(B),
+  D(D)
 {
   // create a temporary object to store node_grid_per_round
   std::vector<std::vector<Node>> temp_node_grid(grid_size, std::vector<Node>(grid_size));   
@@ -33,23 +36,28 @@ Grid::Grid(std::vector<std::vector<int>>& TN_locations, int N, double P):
   users.push_back(B_index); // B should be the last cuz it is always the sink
 
   // initialize shared status buffer size
-  int SS_size = 0; // size of shared states buffer
-  for(int i=0; i<users.size() - 1; i++) {
-    for(int j=i+1; j<users.size(); j++) {
-      SS_size ++;
-    }
-  }
   // for SS[i][j], the 1st dimension of SS stands for the Ti,
   // the 2nd dimension of SS stands for Tj
   // SS[i][j] is a vector that stores the lengths of all the paths between Ti and Tj
-  SS_global.resize(SS_size);
+  SS_global.resize(users.size());
   for(auto& row : SS_global) {
-    row.resize(SS_size);
+    row.resize(users.size());
   }
   
-  SS_local.resize(SS_size);
+  SS_local.resize(users.size());
   for(auto& row : SS_local) {
-    row.resize(SS_size);
+    row.resize(users.size());
+  }
+
+  // also initialize size of RK, SK
+  RK.resize(users.size());
+  for(auto& row : RK) {
+    row.resize(users.size());
+  }
+
+  SK.resize(users.size());
+  for(auto& row : SK) {
+    row.resize(users.size());
   }
 
   // check if distance results are correct
@@ -97,17 +105,17 @@ void Grid::display() {
   for(int i=0; i<grid_size; i++) {
     for(int j=0; j<grid_size; j++) {
       if(node_grid[i][j].role == 1) {
-        std::cout << std::setfill('0') << std::setw(2) << "\033[32m"  << i*grid_size+j << "\033[0m";
+        std::cout << std::setfill('0') << "\033[32m" << std::setw(3) << i*grid_size+j << "\033[0m";
       
       }
       else if(node_grid[i][j].role == 2) {
-        std::cout << std::setfill('0') << std::setw(2) << "\033[32m"  << i*grid_size+j << "\033[0m";
+        std::cout << std::setfill('0') << "\033[32m" << std::setw(3) << i*grid_size+j << "\033[0m";
       }
       else if(node_grid[i][j].role == 0) {
-        std::cout << std::setfill('0') << std::setw(2) << i*grid_size+j;
+        std::cout << std::setfill('0') << std::setw(3) << i*grid_size+j;
       }
       else {
-        std::cout << std::setfill('0') << std::setw(2) << "\033[31m"  << i*grid_size+j << "\033[0m";
+        std::cout << std::setfill('0') << "\033[31m" << std::setw(3) << i*grid_size+j << "\033[0m";
       }
       if(node_grid_per_round[i][j].direction[2]) {std::cout << "--";}
       else {std::cout << "  ";}
@@ -116,8 +124,8 @@ void Grid::display() {
     // before it print next row of grid
     // check if current row node have some connect with next row
     for(int j=0; j<grid_size; j++) {
-      if(node_grid_per_round[i][j].direction[3]) {std::cout << "|   ";}
-      else {std::cout << "    ";}
+      if(node_grid_per_round[i][j].direction[3]) {std::cout << " |   ";}
+      else {std::cout << "     ";}
     }
     std::cout << "\n";
   }
@@ -497,10 +505,62 @@ void Grid::stage2_local_IA() {
     }
   }
 
-  // print the paths
-
-
 }
+
+
+/**
+ * @brief: construct network flow graph and get the maximum flow value
+ */
+int Grid::getMaxFlow(std::vector<std::vector<std::vector<int>>> SS) {
+
+  int result;
+
+  /* 
+   * first, transform SS to RK to SK
+   */
+  
+  // for a path of size N, the success rate of it being able to transform to 1 bit in RK is B^(N-1)
+  // for a path of size N, the success rate of it being able to transform to 1 bit in SK from RK is (1-D)^(N)
+  std::srand(time(NULL)); // seed the random number generator
+  double S1 = 0.0; // success rate to add a bit to RK, S1 = B^(N-1)
+  double S2 = 0.0; // success rate to add a bit from RK to SK, S2 = (1-D)^(N)
+  for(int i=0; i<SS.size(); i++) {
+    for(int j=0; j<SS[i].size(); j++) {
+      // for each path between Ti, Tj
+      for(int p=0; p<SS[i][j].size(); p++) {
+        
+        double rand_num = ((double) rand() / RAND_MAX); // generate a random number between 0 and 1
+       
+        S1 = std::pow(B, SS[i][j][p] - 1);
+        S2 = std::pow(1-D, SS[i][j][p]); 
+        if(rand_num < S1) {
+          RK[i][j] ++;
+          if(rand_num < S2) {
+            SK[i][j] ++;
+          }
+        }
+      }
+    }
+  }
+
+  /*
+   * second, construct a network flow graph from SK
+   */
+  std::vector<std::vector<int>> networkGraph(users.size(), std::vector<int>(users.size()));
+  for(int i=0; i<users.size(); i++) {
+    for(int j=0; j<users.size(); j++) {
+      networkGraph[i][j] = SK[i][j];
+    }
+  }
+ 
+  /*
+   * finally, get maximum flow result  
+   */
+  result = fordFulkerson(users.size(), networkGraph, 0, users.size()-1);
+ 
+  return result;
+}
+
 
 
 
