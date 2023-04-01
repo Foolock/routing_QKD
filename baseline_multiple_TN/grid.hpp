@@ -28,6 +28,11 @@ class Grid {
     void display();
 
     /**
+     * @brief: helper: a function to show the qubits and intra link status of a node
+     */
+    void displayNodeStatus();
+    
+  /**
      * @brief: reset edges_per_round[] and node_grid_per_round[] as its original copy
      *
      */

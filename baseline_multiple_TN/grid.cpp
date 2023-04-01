@@ -117,7 +117,60 @@ void Grid::display() {
     std::cout << "\n";
   }
 
+}
 
+/**
+ * @brief: helper: a function to show the qubits and intra link status of a node
+ */
+void Grid::displayNodeStatus() {
+  
+
+  std::cout << "checking node's qubit and intra links status:\n";
+
+  int check = 0;
+ 
+  std::cout << "do you need to check? yes(1), no(0)\n";
+
+  std::cin >> check;
+
+  while(check) {
+    
+    // get index 
+    int index;
+    std::cout << "input index: ";
+    std::cin >> index;
+    std::cout << "for node " << index  << ":\n";
+   
+    std::vector<int> coordinate = int2coordinate(index, grid_size);
+
+    int row = coordinate[0];
+    int col = coordinate[1];
+
+    // print node's qubits status
+    std::cout << "qubits status: \n";
+    for (int i=0; i<4; i++) {
+      if(node_grid_per_round[row][col].qubits[i].available) {
+        std::cout << "y ";
+      }
+      else {
+        std::cout << "n ";
+      }
+    } 
+    std::cout << "\n";
+
+    // print node's intra links status
+    std::cout << "intra links status: \n";
+    for (int i=0; i<4; i++) {
+      std::cout << i << "(" << node_grid_per_round[row][col].qubits[i].to << ") "; 
+    }
+    std::cout << "\n";
+
+
+    std::cout << "check(1), stop(0)\n";
+
+    std::cin >> check;
+
+ }
 }
 
 /**
@@ -222,7 +275,8 @@ void Grid::stage1() {
         }
       }
     }
-  } 
+  }
+
 }
 
 // @brief: stage 2: (global routing) create intra link with a success rate = R

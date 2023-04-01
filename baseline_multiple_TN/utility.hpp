@@ -132,14 +132,6 @@ std::vector<std::vector<int>> getPathsDFS(
     );
 
 /**
- * @brief: helper: a function to show the qubits and intra link status of a node
- *
- *
- */
-void displayNodeStatus(std::vector<std::vector<Node>> node_grid_per_round, int grid_size);
-
-
-/**
  *
  *
  *
@@ -332,10 +324,10 @@ std::vector<int> find2qubits_IA(int curr_r, int curr_c, std::vector<int> availab
                       node_grid_per_round[neighbor_coor[j][0]][neighbor_coor[j][1]].D[k1];
             if(temp_D < smallest_D) {
               smallest_D = temp_D;
-              smallest_D_neighbors[0] = {i, j};
+              smallest_D_neighbors[0] = {neighbor[i], neighbor[j]};
             }
             else if(temp_D = smallest_D) {
-              smallest_D_neighbors.push_back({i ,j});
+              smallest_D_neighbors.push_back({neighbor[i], neighbor[j]});
             }
           }
         }
@@ -428,13 +420,7 @@ void dfs(int s, int target, int curr_q, std::vector<int>& path,
     // (both are 0 = uppper, 1 = left, 2 = right, 3 = bottom)
     
     int next = edges_per_round[s][next_q].to;
-    if(next == -1) {
-      std::cerr << "error: next = -1/\n";
-      std::cerr << "s = " << s << "\n";
-      std::cerr << "curr_q = " << curr_q << "\n";
-      std::cerr << "next_q = " << next_q << "\n";
-      std::exit(EXIT_FAILURE);
-    }
+    
     // before next dfs, next_q = 3 - next_q cuz for neighbor node's current qubit
     // in the next dfs, it is in reverse direction to next_q in this iteration
     next_q = 3 - next_q;
@@ -497,63 +483,6 @@ std::vector<std::vector<int>> getPathsDFS(
   return result;
 
 }
-
-/**
- * @brief: helper: a function to show the qubits and intra link status of a node
- *
- *
- */
-void displayNodeStatus(std::vector<std::vector<Node>> node_grid_per_round, int grid_size) {
-  
-
-  std::cout << "checking node's qubit and intra links status:\n";
-
-  int check = 0;
- 
-  std::cout << "do you need to check? yes(1), no(0)\n";
-
-  std::cin >> check;
-
-  while(check) {
-    
-    // get index 
-    int index;
-    std::cout << "input index: ";
-    std::cin >> index;
-    std::cout << "for node " << index  << ":\n";
-   
-    std::vector<int> coordinate = int2coordinate(index, grid_size);
-
-    int row = coordinate[0];
-    int col = coordinate[1];
-
-    // print node's qubits status
-    std::cout << "qubits status: \n";
-    for (int i=0; i<4; i++) {
-      if(node_grid_per_round[row][col].qubits[i].available) {
-        std::cout << "y ";
-      }
-      else {
-        std::cout << "n ";
-      }
-    } 
-    std::cout << "\n";
-
-    // print node's intra links status
-    std::cout << "intra links status: \n";
-    for (int i=0; i<4; i++) {
-      std::cout << i << "(" << node_grid_per_round[row][col].qubits[i].to << ") "; 
-    }
-    std::cout << "\n";
-
-
-    std::cout << "check(1), stop(0)\n";
-
-    std::cin >> check;
-
- }
-}
-
 
 
 
