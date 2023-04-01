@@ -127,9 +127,16 @@ void dfs(int s, int target, int curr_q, std::vector<int>& path,
 std::vector<std::vector<int>> getPathsDFS(
     std::vector<std::vector<Node>> node_grid_per_round,
     std::vector<std::vector<Edge>> edges_per_round,
-    int grid_size
+    int grid_size,
+    std::vector<std::vector<int>> users // users = index(in coordinate) of {A, T1, T2, ..., B} 
     );
 
+/**
+ * @brief: helper: a function to show the qubits and intra link status of a node
+ *
+ *
+ */
+void displayNodeStatus(std::vector<std::vector<Node>> node_grid_per_round, int grid_size);
 
 
 /**
@@ -419,8 +426,15 @@ void dfs(int s, int target, int curr_q, std::vector<int>& path,
     // get the index of next node which the current qubit is connected to through inter link 
     // by edges_per_round[curr_node][direction] = next, here direction = next_q
     // (both are 0 = uppper, 1 = left, 2 = right, 3 = bottom)
-    int next = edges_per_round[s][next_q].to;
     
+    int next = edges_per_round[s][next_q].to;
+    if(next == -1) {
+      std::cerr << "error: next = -1/\n";
+      std::cerr << "s = " << s << "\n";
+      std::cerr << "curr_q = " << curr_q << "\n";
+      std::cerr << "next_q = " << next_q << "\n";
+      std::exit(EXIT_FAILURE);
+    }
     // before next dfs, next_q = 3 - next_q cuz for neighbor node's current qubit
     // in the next dfs, it is in reverse direction to next_q in this iteration
     next_q = 3 - next_q;
@@ -463,17 +477,19 @@ std::vector<std::vector<int>> getPathsDFS(
       // and the qubit of that neighbor node connected through inter link 
       for(int direction=0; direction<4; direction++) { // traverse s's directions to find its neighbor 
         int neighbor_s = edges_per_round[s][direction].to;
-        path.push_back(s); // before dfs, put A as the starting node
-        int neighbor_q = 3 - direction; // This neighbor's qubit connected with s through inter link is in the reverse direction
-        dfs(neighbor_s, t, neighbor_q, path,
-          node_grid_per_round,
-          edges_per_round,
-          grid_size
-          );
-        if(end_node == s) {
-          result.push_back(path);
+        if(neighbor_s != -1) {
+          path.push_back(s); // before dfs, put A as the starting node
+          int neighbor_q = 3 - direction; // This neighbor's qubit connected with s through inter link is in the reverse direction
+          dfs(neighbor_s, t, neighbor_q, path,
+            node_grid_per_round,
+            edges_per_round,
+            grid_size
+            );
+          if(end_node == s) {
+            result.push_back(path);
+          }
+          path.clear();
         }
-        path.clear();
       }
     }
   }
@@ -482,13 +498,61 @@ std::vector<std::vector<int>> getPathsDFS(
 
 }
 
+/**
+ * @brief: helper: a function to show the qubits and intra link status of a node
+ *
+ *
+ */
+void displayNodeStatus(std::vector<std::vector<Node>> node_grid_per_round, int grid_size) {
+  
+
+  std::cout << "checking node's qubit and intra links status:\n";
+
+  int check = 0;
+ 
+  std::cout << "do you need to check? yes(1), no(0)\n";
+
+  std::cin >> check;
+
+  while(check) {
+    
+    // get index 
+    int index;
+    std::cout << "input index: ";
+    std::cin >> index;
+    std::cout << "for node " << index  << ":\n";
+   
+    std::vector<int> coordinate = int2coordinate(index, grid_size);
+
+    int row = coordinate[0];
+    int col = coordinate[1];
+
+    // print node's qubits status
+    std::cout << "qubits status: \n";
+    for (int i=0; i<4; i++) {
+      if(node_grid_per_round[row][col].qubits[i].available) {
+        std::cout << "y ";
+      }
+      else {
+        std::cout << "n ";
+      }
+    } 
+    std::cout << "\n";
+
+    // print node's intra links status
+    std::cout << "intra links status: \n";
+    for (int i=0; i<4; i++) {
+      std::cout << i << "(" << node_grid_per_round[row][col].qubits[i].to << ") "; 
+    }
+    std::cout << "\n";
 
 
+    std::cout << "check(1), stop(0)\n";
 
+    std::cin >> check;
 
-
-
-
+ }
+}
 
 
 
