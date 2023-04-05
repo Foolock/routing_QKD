@@ -25,7 +25,7 @@ int main() {
   grid.stage2_global();
   grid.stage2_local_IA();
 
-
+    
   // get 100 simples: compare the performance of Global and Local routing
   int num_sample = 10;
   for(int i=0; i<num_sample; i++) {
@@ -34,7 +34,6 @@ int main() {
     grid.stage2_global();
     grid.reset(); 
   }
-
   std::cout << "after another " << num_sample + 1 << " samples\n";
 
   int num_key = grid.getMaxFlow(grid.SS_global);
@@ -44,7 +43,6 @@ int main() {
   grid.displayNetworkGraph();
 
   grid.getPriorityEdge();
-
   return 0;
 }
 

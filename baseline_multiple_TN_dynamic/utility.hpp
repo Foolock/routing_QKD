@@ -232,6 +232,8 @@ std::vector<std::vector<int>> bfs(
       }
     } 
 
+    std::cout << "stuck";
+
     int last = path[path.size() - 1];
     
     // if last vertex is the desired destination 
@@ -443,11 +445,15 @@ void dfs(int s, int target, int curr_q, std::vector<int>& path,
     // (both are 0 = uppper, 1 = left, 2 = right, 3 = bottom)
     
     int next = edges_per_round[s][next_q].to;
-    
+  
     // before next dfs, next_q = 3 - next_q cuz for neighbor node's current qubit
     // in the next dfs, it is in reverse direction to next_q in this iteration
     next_q = 3 - next_q;
- 
+
+    if(next == -1) { // if you reach a end node, next is -1, then you should not pass it to next iteration
+      return;
+    }
+
     // recurr
     dfs(next, target, next_q, path,
         node_grid_per_round,
