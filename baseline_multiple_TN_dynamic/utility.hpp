@@ -224,18 +224,35 @@ std::vector<std::vector<int>> bfs(
     path = q.front();
     q.pop();
 
+    // if the length of the current path is already exceed the distance of half of the perimeter of the grid while 
+    // still having no results
+    // we don't need to continue actually, notice that the stuck-in while loop problem is actually it is taking
+    // a long detour, so we set this criteria to avoid long unecessary detour
+    if(path.size() > 2*grid_size - 1) {
+      break;
+    }
+
+    // this criteria can help us leave the while loop early if we have some results
     auto it = std::min_element(std::begin(result), std::end(result), min_size);
-    if(result.size()) { // "it" is nullptr at the beginning cuz nothing in result
+    if(result.size() > 0) { // "it" is nullptr at the beginning cuz nothing in result
       if(path.size() > it->size()) { // if the path is already longer than the result we have
                                      // no need to continue the loop
-        continue;
+        break; // if you use continue, there could be a potential issue!!
+               // let's for last round you pop path1, then you get path2 by path1 and go
+               // to this round, but path2 now has longer length than shortest path,
+               // use continue will skip this round, but then in one of the future rounds 
+               // you will pop path1 again and then pop path2, thus stuck in the loop 
       }
     } 
 
-    std::cout << "stuck";
-
     int last = path[path.size() - 1];
     
+    std::cout << "path: ";
+    for(int i=0; i<path.size(); i++) {
+      std::cout << path[i] << " ";
+    }
+    std::cout << "\n";
+
     // if last vertex is the desired destination 
     // then store this path to our result path vector 
     if(last == t) {
