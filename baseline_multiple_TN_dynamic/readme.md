@@ -18,3 +18,8 @@
      there is no need to continue the loop" to avoid crazy amount of detours. The original criteria "if the path length has already exceeded the shortest
      path length in results, breaks" is kept for speed up when we do have the results.
      Also, before I am using continue, which is wrong. it should be break.
+
+- 4/5/5:30PM
+  1. finsih finding prioritized edges.
+  2. modify the format of _networkGraph for ease fo implementation of getPriorityEdges(); the first dimension of _networkGraph is 
+  {A, T1, T2, T3, ..., B}, same for 2nd dimension.

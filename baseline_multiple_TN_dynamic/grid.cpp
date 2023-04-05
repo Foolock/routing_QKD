@@ -197,11 +197,11 @@ void Grid::displayNetworkGraph() {
     if(i == 0) {
       std::cout << "     A ";
     }
-    else if(i == 1) {
+    else if(i == _networkGraph.size() - 1) {
       std::cout << " B ";
     }
     else {
-      std::cout << " " << "T" << i-1;
+      std::cout << " " << "T" << i;
     }
   }
   std::cout << "\n";
@@ -210,11 +210,11 @@ void Grid::displayNetworkGraph() {
     if(i == 0) {
       std::cout << "A ";
     }
-    else if(i == 1) {
+    else if(i == _networkGraph.size() - 1) {
       std::cout << "B ";
     }
     else {
-      std::cout << "T" << i-1;
+      std::cout << "T" << i;
     }
     std::cout<< "{ ";
     for(int j=0; j<_networkGraph[i].size(); j++) {
@@ -428,7 +428,6 @@ void Grid::stage2_global() {
       global_paths.erase(global_paths.begin() + shortest_index);
 
   }
-
 }
 
 
@@ -542,7 +541,6 @@ void Grid::stage2_local_IA() {
       SS_local[head_role-1][tail_role-1].push_back(paths[i].size()-1);
     }
   }
-
 }
 
 
@@ -597,7 +595,7 @@ int Grid::getMaxFlow(std::vector<std::vector<std::vector<int>>> SS) {
   /*
    * finally, get maximum flow result  
    */
-  result = fordFulkerson(users.size(), _networkGraph, 0, 1);
+  result = fordFulkerson(users.size(), networkGraph, 0, 1);
 
   _key_num = result;
 
@@ -608,6 +606,15 @@ int Grid::getMaxFlow(std::vector<std::vector<std::vector<int>>> SS) {
  * @brief: get a set of user pair(Ti, Tj) to prioritize from the network flow graph constructed in getMaxFlow()
  */
 std::vector<std::vector<int>> Grid::getPriorityEdge() {
+
+  // put row B at the end of the networkGraph 
+  for(int i=0; i<_networkGraph.size(); i++) {
+    std::rotate(_networkGraph[i].begin() + 1, _networkGraph[i].begin() + 2, _networkGraph[i].end());
+  }
+  std::rotate(_networkGraph.begin() + 1, _networkGraph.begin() + 2, _networkGraph.end());
+
+  // display networkGraph
+  displayNetworkGraph();  
 
   std::vector<std::vector<int>> priorityEdges;
   
@@ -675,7 +682,7 @@ std::vector<std::vector<int>> Grid::getPriorityEdge() {
   // find the shortest path from max_edge[1] to B 
   shortestPathFaster(_networkGraph, max_edge[1], users.size(), path);
   // get the edges along max_edge[1] to B
-  curr_node = 1;
+  curr_node = users.size()-1;
   if(curr_node != max_edge[1]) { // if max_edge[1] is 1(B), it means B is the end node of the max edge
                          // then no need to find edges from max_edge[1] to B
     while(1) {

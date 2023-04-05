@@ -246,13 +246,7 @@ std::vector<std::vector<int>> bfs(
     } 
 
     int last = path[path.size() - 1];
-    
-    std::cout << "path: ";
-    for(int i=0; i<path.size(); i++) {
-      std::cout << path[i] << " ";
-    }
-    std::cout << "\n";
-
+   
     // if last vertex is the desired destination 
     // then store this path to our result path vector 
     if(last == t) {

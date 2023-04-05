@@ -174,6 +174,7 @@ class Grid {
     // for SS[i][j], the 1st dimension of SS stands for the role of Ti,
     // the 2nd dimension of SS stands for the role of Tj
     // SS[i][j] is a vector that stores the lengths of all the paths between Ti and Tj
+    // storing format(1st dimension): A, B, T1, T2, T3, ... 
     std::vector<std::vector<std::vector<int>>> SS_global; // SS_global will be assigned in stage 2 global  
     std::vector<std::vector<std::vector<int>>> SS_local; // SS_local will be assigned in stage 2 local 
 
@@ -181,13 +182,19 @@ class Grid {
     // for RK[i][j], the 1st dimension of SS stands for the Ti,
     // the 2nd dimension of SS stands for Tj
     // SS[i][j] is a vector that stores the lengths of all the paths between Ti and Tj
+    // storing format(1st dimension): A, B, T1, T2, T3, ... 
+    // storing format(2nd dimension): A, B, T1, T2, T3, ... 
     std::vector<std::vector<int>> RK;
 
     // secret key pool
     // format same as RK
+    // storing format(1st dimension): A, B, T1, T2, T3, ... 
+    // storing format(2nd dimension): A, B, T1, T2, T3, ... 
     std::vector<std::vector<int>> SK;
 
     // a network flow graph to calculate the max key value(max flow) from Alice to Bob
+    // storing format(1st dimension): A, T1, T2, T3, ..., B (format finalized in getPriorityEdges()) 
+    // storing format(2nd dimension): A, T1, T2, T3, ..., B (format finalized in getPriorityEdges()) 
     std::vector<std::vector<int>> _networkGraph;
 
     // final key number from A to B

@@ -27,8 +27,9 @@ int main() {
 
     
   // get 100 simples: compare the performance of Global and Local routing
-  int num_sample = 10;
+  int num_sample = 1000;
   for(int i=0; i<num_sample; i++) {
+    std::cout << "round: " << i+1 << "\n";
     grid.stage1();
     grid.stage2_local_IA();
     grid.stage2_global();
@@ -40,9 +41,8 @@ int main() {
  
   std::cout << "key amount of global routing = " << num_key << "\n";
 
-  grid.displayNetworkGraph();
-
   grid.getPriorityEdge();
+
   return 0;
 }
 
