@@ -26,7 +26,7 @@ int main() {
 
 
   // get 100 simples: compare the performance of Global and Local routing
-  int num_sample = 100;
+  int num_sample = 10;
   for(int i=0; i<num_sample; i++) {
     grid.stage1();
     grid.stage2_local_IA();
@@ -34,7 +34,7 @@ int main() {
     grid.reset(); 
   }
 
-  std::cout << "after another " << num_sample << " samples\n";
+  std::cout << "after another " << num_sample + 1 << " samples\n";
 
   std::cout << "Global routing: \n";
   std::cout << "the num of paths found between A and T1: ";
@@ -54,29 +54,48 @@ int main() {
 
   std::cout << "the num of paths found between T2 and B: ";
   std::cout << grid.SS_global[3][1].size() << "\n";
+//  
+//  std::cout << "Local routing: \n";
+//  std::cout << "the num of paths found between A and T1: ";
+//  std::cout << grid.SS_local[0][2].size() << "\n";
+//
+//  std::cout << "the num of paths found between A and T2: ";
+//  std::cout << grid.SS_local[0][3].size() << "\n";
+//
+//  std::cout << "the num of paths found between A and B: ";
+//  std::cout << grid.SS_local[0][1].size() << "\n";
+//
+//  std::cout << "the num of paths found between T1 and T2: ";
+//  std::cout << grid.SS_local[2][3].size() << "\n";
+//
+//  std::cout << "the num of paths found between T1 and B: ";
+//  std::cout << grid.SS_local[2][1].size() << "\n";
+//
+//  std::cout << "the num of paths found between T2 and B: ";
+//  std::cout << grid.SS_local[3][1].size() << "\n";
+//  
+
+  int num_key = grid.getMaxFlow(grid.SS_global);
+
+  std::cout << "the num of secret keys found between A and T1: ";
+  std::cout << grid.SK[0][2] << "\n";
+
+  std::cout << "the num of secret keys found between A and T2: ";
+  std::cout << grid.SK[0][3] << "\n";
+
+  std::cout << "the num of secret keys found between A and B: ";
+  std::cout << grid.SK[0][1] << "\n";
+
+  std::cout << "the num of secret keys found between T1 and T2: ";
+  std::cout << grid.SK[2][3] << "\n";
+
+  std::cout << "the num of secret keys found between T1 and B: ";
+  std::cout << grid.SK[2][1] << "\n";
+
+  std::cout << "the num of secret keys found between T2 and B: ";
+  std::cout << grid.SK[3][1] << "\n";
   
-  std::cout << "Local routing: \n";
-  std::cout << "the num of paths found between A and T1: ";
-  std::cout << grid.SS_local[0][2].size() << "\n";
-
-  std::cout << "the num of paths found between A and T2: ";
-  std::cout << grid.SS_local[0][3].size() << "\n";
-
-  std::cout << "the num of paths found between A and B: ";
-  std::cout << grid.SS_local[0][1].size() << "\n";
-
-  std::cout << "the num of paths found between T1 and T2: ";
-  std::cout << grid.SS_local[2][3].size() << "\n";
-
-  std::cout << "the num of paths found between T1 and B: ";
-  std::cout << grid.SS_local[2][1].size() << "\n";
-
-  std::cout << "the num of paths found between T2 and B: ";
-  std::cout << grid.SS_local[3][1].size() << "\n";
-  
-
-  
-  std::cout << "key amount of global routing = " << grid.getMaxFlow(grid.SS_global) << "\n";
+  std::cout << "key amount of global routing = " << num_key << "\n";
 
 
   return 0;
