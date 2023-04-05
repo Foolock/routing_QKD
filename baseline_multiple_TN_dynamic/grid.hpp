@@ -132,7 +132,7 @@ class Grid {
     /**
      * @brief: get a set of user pair(Ti, Tj) to prioritize from the network flow graph constructed in getMaxFlow()
      */
-    void getPriorityEdge(); 
+    std::vector<std::vector<int>> getPriorityEdge(); 
 
 // private:
     // node grid
@@ -189,6 +189,9 @@ class Grid {
 
     // a network flow graph to calculate the max key value(max flow) from Alice to Bob
     std::vector<std::vector<int>> _networkGraph;
+
+    // final key number from A to B
+    int _key_num;
 };
 
 

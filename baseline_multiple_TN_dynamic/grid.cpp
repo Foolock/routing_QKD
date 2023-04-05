@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <cmath>
 #include <limits.h>
+#include <algorithm>
 
 /** 
  * @brief: place Alice(1), Bob(2), TNs(3,4,...) and initialize Da, Db, Dt1, Dt2, ... for each node
@@ -597,14 +598,25 @@ int Grid::getMaxFlow(std::vector<std::vector<std::vector<int>>> SS) {
    * finally, get maximum flow result  
    */
   result = fordFulkerson(users.size(), _networkGraph, 0, 1);
- 
+
+  _key_num = result;
+
   return result;
 }
 
 /**
  * @brief: get a set of user pair(Ti, Tj) to prioritize from the network flow graph constructed in getMaxFlow()
  */
-void Grid::getPriorityEdge() {
+std::vector<std::vector<int>> Grid::getPriorityEdge() {
+
+  std::vector<std::vector<int>> priorityEdges;
+  
+  /**
+   * if _key_num = 0, just return???
+   */
+  if(_key_num == 0) {
+    return priorityEdges;
+  }
 
   /*
    * first, find a edge in _networkGraph with the maximum capacity
@@ -614,9 +626,9 @@ void Grid::getPriorityEdge() {
   std::vector<int> max_edge(2, -1); // edge with max capacity 
   for(int i=0; i<users.size(); i++) {
     for(int j=0; j<users.size(); j++) {
-      if(_networkGraph[i][j] > max_capacity) {
+      if(_networkGraph[i][j] >= max_capacity) {
         max_capacity = _networkGraph[i][j];
-        max_edge = {i, j};
+        max_edge = {i, j}; // j > i, cuz in the graph all edges goes in A->B direction
       }  
     }
   }
@@ -629,10 +641,28 @@ void Grid::getPriorityEdge() {
    * i.e., find 2 shortest paths, one from A to max_edge[0], one
    * from max_edge[1] to Bob
    */
-  // use sfpa algorithm to find shortest path
+  // use sfpa algorithm to find shortest path, here path[i] is the parent of i
   int path[users.size()];
+  std::fill(path, path+users.size(), -1);
   // find the shortest path from A to max_edge[0] 
   shortestPathFaster(_networkGraph, 0, users.size(), path);
+  // get the edges along A to max_edge[0]
+  int curr_node = max_edge[0];
+  if(curr_node != 0) { // if max_edge[0] = 0(A), it means A is the start node of the max edge
+                         // then no need to find edges from A
+    while(1) {
+      if(path[curr_node] == -1) { // path[i] = -1 means node path[i] has no connection to node i
+        break;
+      }
+      priorityEdges.push_back({path[curr_node], curr_node});
+      if(path[curr_node] == 0) {
+        break;
+      }
+      else{
+        curr_node = path[curr_node]; 
+      }
+    }
+  }
 
   std::cout << "print the paths\n";
   for(int i=0; i<users.size(); i++) {
@@ -640,6 +670,40 @@ void Grid::getPriorityEdge() {
   }
   std::cout << "\n";
 
+  // reset the path array
+  std::fill(path, path+users.size(), -1);
+  // find the shortest path from max_edge[1] to B 
+  shortestPathFaster(_networkGraph, max_edge[1], users.size(), path);
+  // get the edges along max_edge[1] to B
+  curr_node = 1;
+  if(curr_node != max_edge[1]) { // if max_edge[1] is 1(B), it means B is the end node of the max edge
+                         // then no need to find edges from max_edge[1] to B
+    while(1) {
+      if(path[curr_node] == -1) {
+        break;
+      }
+      priorityEdges.push_back({path[curr_node], curr_node});
+      if(path[curr_node] == max_edge[1]) {
+        break;
+      }
+      else{
+        curr_node = path[curr_node]; 
+      }
+    }
+  }
+
+  std::cout << "print the paths\n";
+  for(int i=0; i<users.size(); i++) {
+    std::cout << path[i] << " ";
+  }
+  std::cout << "\n";
+
+  std::cout << "the prioritize edges are: \n";
+  for(int i=0; i<priorityEdges.size(); i++) {
+    std::cout << "{" << priorityEdges[i][0] << ", " << priorityEdges[i][1] << "}\n"; 
+  }
+
+  return priorityEdges; 
 }
 
 
