@@ -39,7 +39,7 @@ class Grid {
 
     /**
      * @brief: reset edges_per_round[] and node_grid_per_round[] as its original copy
-     *
+     *          also reset _priorityEdges
      */
     void reset();
 
@@ -132,7 +132,7 @@ class Grid {
     /**
      * @brief: get a set of user pair(Ti, Tj) to prioritize from the network flow graph constructed in getMaxFlow()
      */
-    std::vector<std::vector<int>> getPriorityEdge(); 
+    void getPriorityEdge(); 
 
 // private:
     // node grid
@@ -196,6 +196,9 @@ class Grid {
     // storing format(1st dimension): A, T1, T2, T3, ..., B (format finalized in getPriorityEdges()) 
     // storing format(2nd dimension): A, T1, T2, T3, ..., B (format finalized in getPriorityEdges()) 
     std::vector<std::vector<int>> _networkGraph;
+
+    // Edges to prioritized 
+    std::vector<std::vector<int>> _priorityEdges;
 
     // final key number from A to B
     int _key_num;

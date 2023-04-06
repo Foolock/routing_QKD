@@ -226,10 +226,12 @@ void Grid::displayNetworkGraph() {
 
 /**
  * @brief: reset edges_per_round[] and node_grid_per_round[] as its original copy
+ *          also reset _priorityEdges
  */
 void Grid::reset() {
   edges_per_round = edges;
   node_grid_per_round = node_grid;
+  _priorityEdges.clear();
 }
 
 /** 
@@ -352,11 +354,20 @@ void Grid::stage2_global() {
   }
   
   /*
-   * second, recurrsively find the shortest path and delete it from the grid
+   * second, if there are edges(user pair) to prioritized, constructed the path 
+   * among prioritized user pair first, 
+   * if no, recurrsively find the shortest path and delete it from the grid
    * by marking them as visited until there is no available path
    */
   while(global_paths.size()) {
-  
+ 
+    // if there are user pairs to prioritized,
+    // find the corresponding paths in global_paths 
+    // to construct first
+    if(_priorityEdges.size() > 0) {
+        
+    }
+
     // get the shortest path in global_paths 
     std::vector<int> shortest = global_paths[0];
     int shortest_index = 0;
@@ -605,7 +616,7 @@ int Grid::getMaxFlow(std::vector<std::vector<std::vector<int>>> SS) {
 /**
  * @brief: get a set of user pair(Ti, Tj) to prioritize from the network flow graph constructed in getMaxFlow()
  */
-std::vector<std::vector<int>> Grid::getPriorityEdge() {
+void Grid::getPriorityEdge() {
 
   // put row B at the end of the networkGraph 
   for(int i=0; i<_networkGraph.size(); i++) {
@@ -616,13 +627,13 @@ std::vector<std::vector<int>> Grid::getPriorityEdge() {
   // display networkGraph
   displayNetworkGraph();  
 
-  std::vector<std::vector<int>> priorityEdges;
+  std::vector<std::vector<int>> _priorityEdges;
   
   /**
    * if _key_num = 0, just return???
    */
   if(_key_num == 0) {
-    return priorityEdges;
+    return;
   }
 
   /*
@@ -640,7 +651,7 @@ std::vector<std::vector<int>> Grid::getPriorityEdge() {
     }
   }
 
-  std::cout << "emax = {" << max_edge[0] << ", " << max_edge[1] << "}\n";
+  std::cout << "emax in networkGraph = {" << max_edge[0] << ", " << max_edge[1] << "}\n";
 
   /*
    * second, find shortest path(cost = capacity) in _networkGraph
@@ -661,7 +672,7 @@ std::vector<std::vector<int>> Grid::getPriorityEdge() {
       if(path[curr_node] == -1) { // path[i] = -1 means node path[i] has no connection to node i
         break;
       }
-      priorityEdges.push_back({path[curr_node], curr_node});
+      _priorityEdges.push_back({path[curr_node], curr_node});
       if(path[curr_node] == 0) {
         break;
       }
@@ -670,12 +681,6 @@ std::vector<std::vector<int>> Grid::getPriorityEdge() {
       }
     }
   }
-
-  std::cout << "print the paths\n";
-  for(int i=0; i<users.size(); i++) {
-    std::cout << path[i] << " ";
-  }
-  std::cout << "\n";
 
   // reset the path array
   std::fill(path, path+users.size(), -1);
@@ -689,7 +694,7 @@ std::vector<std::vector<int>> Grid::getPriorityEdge() {
       if(path[curr_node] == -1) {
         break;
       }
-      priorityEdges.push_back({path[curr_node], curr_node});
+      _priorityEdges.push_back({path[curr_node], curr_node});
       if(path[curr_node] == max_edge[1]) {
         break;
       }
@@ -699,18 +704,37 @@ std::vector<std::vector<int>> Grid::getPriorityEdge() {
     }
   }
 
-  std::cout << "print the paths\n";
-  for(int i=0; i<users.size(); i++) {
-    std::cout << path[i] << " ";
+  // transfer _priorityEdges index to its actual user node index
+  if(_priorityEdges.size() > 0) {
+    for(int i=0; i<_priorityEdges.size(); i++) {
+      if(_priorityEdges[i][0] == 0) { // when = 0, it is A
+        _priorityEdges[i][0] = A_index[0]*grid_size + A_index[1]; 
+      }
+      else { // otherwise, it is a T, no way it will be B 
+        std::vector<int> T = T_indices[_priorityEdges[i][0] - 1]; 
+        _priorityEdges[i][0] = T[0]*grid_size + T[1];   
+      }
+      if(_priorityEdges[i][1] == users.size()-1) { // when = users.size() - 1, it is B
+        _priorityEdges[i][1] = B_index[0]*grid_size + B_index[1];
+      }
+      else { // otherwise, it is a T, no way it will be A
+        std::vector<int> T = T_indices[_priorityEdges[i][1] - 1];
+        _priorityEdges[i][1] = T[0]*grid_size + T[1];
+      }
+
+      // legit check
+      if(_priorityEdges[i][0] == users.size() - 1 || _priorityEdges[i][1] == 0) {
+        std::cerr << "error: _prioritized edges node index wrong.\n";
+        std::exit(EXIT_FAILURE);
+      }
+    }
   }
-  std::cout << "\n";
 
   std::cout << "the prioritize edges are: \n";
-  for(int i=0; i<priorityEdges.size(); i++) {
-    std::cout << "{" << priorityEdges[i][0] << ", " << priorityEdges[i][1] << "}\n"; 
+  for(int i=0; i<_priorityEdges.size(); i++) {
+    std::cout << "{" << _priorityEdges[i][0] << ", " << _priorityEdges[i][1] << "}\n"; 
   }
 
-  return priorityEdges; 
 }
 
 
