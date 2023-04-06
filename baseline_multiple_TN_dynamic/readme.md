@@ -23,3 +23,6 @@
   1. finsih finding prioritized edges.
   2. modify the format of _networkGraph for ease fo implementation of getPriorityEdges(); the first dimension of _networkGraph is 
   {A, T1, T2, T3, ..., B}, same for 2nd dimension.
+
+- 4/5/8:00PM
+  1. finish dynamic global routing. key amount can increase up to 3X with total rounds = 2000, period rounds = 500.

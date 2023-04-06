@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits.h>
 #include <algorithm>
+#include <utility>
 
 /** 
  * @brief: place Alice(1), Bob(2), TNs(3,4,...) and initialize Da, Db, Dt1, Dt2, ... for each node
@@ -231,7 +232,6 @@ void Grid::displayNetworkGraph() {
 void Grid::reset() {
   edges_per_round = edges;
   node_grid_per_round = node_grid;
-  _priorityEdges.clear();
 }
 
 /** 
@@ -333,7 +333,7 @@ void Grid::stage1() {
 }
 
 // @brief: stage 2: (global routing) create intra link with a success rate = R
-void Grid::stage2_global() {
+void Grid::stage2_global_static() {
   
   /*
    * first, we need to find the shortest path (in hops) between any pair of nodes in {Alice, Bob and TNs}  
@@ -379,6 +379,105 @@ void Grid::stage2_global() {
           shortest_index = i;
         }
     }
+
+    // get the role of source and sink node in the shortest path
+    int head = shortest[0];
+    int tail = shortest[shortest.size() - 1];
+    std::vector<int> head_coor = int2coordinate(head, grid_size);
+    std::vector<int> tail_coor = int2coordinate(tail, grid_size);
+    int head_role = node_grid_per_round[head_coor[0]][head_coor[1]].role; 
+    int tail_role = node_grid_per_round[tail_coor[0]][tail_coor[1]].role; 
+
+    // before we mark edges_per_round along the shortest path visited
+    // we need to traverse the shortest path to see if there is any edge 
+    // already marked as visited(in the last iteration)
+    for(int i=0; i<shortest.size(); i++) {
+      for(int j=0; j<4; j++) { // 0 <= direction <= 3
+        if(edges_per_round[shortest[i]][j].to == shortest[i+1]) {
+        if(edges_per_round[shortest[i]][j].visited == true) {
+          // if this path has visited edges
+          // i.e., we have disjoint paths
+          // skip it
+          goto next_shortest;
+        }
+        }
+      }
+    }
+
+    // mark the edges_per_round along the shortest path visited
+    // the path stores node's index(integer), so we need to find the edge first
+    for(int i=0; i<shortest.size() - 1; i++) {
+      // edges_per_round[shortest[i]][direction].visited = true
+      // we have shortest[i], what is the direction?
+      // it is the one when edges_per_round[shortest[i]][direction].to = shortest[i+1] 
+      for(int j=0; j<4; j++) { // 0 <= direction <= 3
+        if(edges_per_round[shortest[i]][j].to == shortest[i+1]) {
+          edges_per_round[shortest[i]][j].visited = true;
+          edges_per_round[shortest[i+1]][3-j].visited = true; // we need to mark for its neighbor too
+        }  
+      }
+    }
+
+    // print this path before we erase it
+    /*
+    std::cout << "found shortest path: \n";
+    for(int i=0; i<shortest.size(); i++) {
+      std::cout << shortest[i] << " -- ";    
+    }
+    std::cout << "\n\n";
+    */
+    
+    // put shortest path length into the corresponding SS before we erase it
+    // according to the role of source and sink node
+    // role: A(1), B(2), T1(3), T2(4), ....
+    // To fit into SS index, role need to -1
+    // also shortest.size() - 1 cuz it counts the number of nodes
+    SS_global[head_role-1][tail_role-1].push_back(shortest.size()-1);
+
+    next_shortest:
+      // delete this path from global path
+      global_paths.erase(global_paths.begin() + shortest_index);
+
+  }
+}
+
+// @brief: dynamic version of stage 2: (global routing) create intra link with a success rate = R
+void Grid::stage2_global_dynamic() {
+  
+  /*
+   * first, we need to find the shortest path (in hops) between any pair of nodes in {Alice, Bob and TNs}  
+   */
+
+  // create a global path pool including all the paths.
+  std::vector<std::vector<int>> global_paths;
+
+  // for each pair in users, use bfs to get available paths
+  for(int i=0; i<users.size() - 1; i++) {
+    for(int j=i+1; j<users.size(); j++) {
+      int s = users[i][0]*grid_size + users[i][1];   
+      int t = users[j][0]*grid_size + users[j][1];
+      std::vector<std::vector<int>> path_st = bfs(s, t, node_grid_per_round, edges_per_round, grid_size);
+      global_paths.reserve(global_paths.size() + path_st.size());
+      global_paths.insert(global_paths.end(), path_st.begin(), path_st.end());
+    }
+  }
+  
+  /*
+   * second, if there are edges(user pair) to prioritized, constructed the path 
+   * among prioritized user pair first, 
+   * if no, recurrsively find the shortest path and delete it from the grid
+   * by marking them as visited until there is no available path
+   */
+  while(global_paths.size()) {
+
+    // the path to construct(named as shortest in static global routing)
+    std::vector<int> shortest;
+    int shortest_index;
+    std::pair<std::vector<int>, int> result;
+    result = pathToConstruct(this, global_paths); 
+
+    shortest = result.first;
+    shortest_index = result.second;
 
     // get the role of source and sink node in the shortest path
     int head = shortest[0];
@@ -617,6 +716,9 @@ int Grid::getMaxFlow(std::vector<std::vector<std::vector<int>>> SS) {
  * @brief: get a set of user pair(Ti, Tj) to prioritize from the network flow graph constructed in getMaxFlow()
  */
 void Grid::getPriorityEdge() {
+
+  // before you get _priorityEdges, you need to reset it 
+  _priorityEdges.clear();
 
   // put row B at the end of the networkGraph 
   for(int i=0; i<_networkGraph.size(); i++) {

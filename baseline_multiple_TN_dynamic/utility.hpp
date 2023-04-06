@@ -10,6 +10,7 @@
 #include <climits>
 #include <queue>
 #include <cstring>
+#include <utility>
 
 /**
  *
@@ -147,6 +148,15 @@ int fordFulkerson(int V, std::vector<std::vector<int>> graph, int s, int t);
  * SPFA algorithm return the shortest path(store in int path[]) 
  */
 void shortestPathFaster(const std::vector<std::vector<int>>& graph, int S, int V, int path[]);
+
+/**
+ * @brief: function used to stage2 global routing dynamic
+ *         choose which path to contruct in global_paths 
+ *         according to _prioritizedEdges
+ *
+ */
+std::pair<std::vector<int>, int> pathToConstruct(Grid* grid, std::vector<std::vector<int>> global_paths);
+
 /**
  *
  *
@@ -691,6 +701,59 @@ void shortestPathFaster(const std::vector<std::vector<int>>& graph, int S, int V
   }
 }
 
+/**
+ * @brief: function used to stage2 global routing dynamic
+ *         choose which path to contruct in global_paths 
+ *         according to _prioritizedEdges
+ *
+ */
+std::pair<std::vector<int>, int> pathToConstruct(Grid* grid, std::vector<std::vector<int>> global_paths) {
+  // the path to construct(named as shortest in static global routing)
+  std::vector<int> shortest;
+  int shortest_index;
+  int min_length;
+        
+  /*      
+   * you need to randomly shuffle the global_paths before you find users pair to prioritized
+   * to avoid over-prioritized one user pair. But let's check out the performance first.
+   */     
+          
+  // if there are user pairs to prioritized,
+  // find the corresponding paths in global_paths 
+  // to construct first
+  bool prioritized {false};
+  if(grid->_priorityEdges.size() > 0) {
+    // first, travserse the global_paths to find if there is any match in prioritized user pair
+    for (int i=0; i<global_paths.size(); i++) {
+      int user0 = global_paths[i][0];
+      int user1 = global_paths[i][global_paths[i].size() - 1];
+      std::vector<int> user_pair = {user0, user1};
+      // if found in grid->_priorityEdges, get the corresponding path and construct it  
+      if(std::find(grid->_priorityEdges.begin(), grid->_priorityEdges.end(), user_pair) != grid->_priorityEdges.end()) {
+        shortest = global_paths[i];
+        prioritized = true;
+      }
+    }
+  }
+
+  if(!prioritized) {
+    // if no prioritized user pair
+    // get the shortest path in global_paths 
+    shortest = global_paths[0];
+    shortest_index = 0;
+    min_length = global_paths[0].size();
+    for (int i = 1; i < global_paths.size(); i++) {
+      if (global_paths[i].size() < min_length) {
+          min_length = global_paths[i].size();
+          shortest = global_paths[i];
+          shortest_index = i;
+        }
+    }
+  }
+  std::pair<std::vector<int>, int> result = std::make_pair(shortest, shortest_index);
+
+  return result;
+}
 
 
 #endif

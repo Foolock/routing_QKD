@@ -104,7 +104,13 @@ class Grid {
      * 
      * it will keep traversing path until there is no path available between all user.
      */
-    void stage2_global();
+    void stage2_global_static();
+
+    /**
+     * @brief: dynamic version of stage 2: (global routing) create intra link with a success rate = R
+     *        Will construct paths between prioritized user pair first. Then try to find shortest path
+     */
+    void stage2_global_dynamic();
 
     /**
      * @brief: stage 2: (local routing: IA algorithm) create intra link with a success rate = R

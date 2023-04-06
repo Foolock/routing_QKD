@@ -14,34 +14,42 @@ int main() {
 
   double D = 0.02;
   Grid grid(T, N, P, B, D);
+
+  int num_sample = 2000;
+  int num_sample_per_period = 500;
+
+  grid.display();
+
+  std::cout << "total number of rounds: " << num_sample << "\n";
+  std::cout << "number of rounds in one period: " << num_sample_per_period << "\n";
  
-  std::cout << "Initialization:\n"; 
-  grid.display();
-
-  grid.stage1();
-  std::cout << "after stage1: \n";
-  grid.display();
-
-  grid.stage2_global();
-  grid.stage2_local_IA();
-
-    
-  // get 100 simples: compare the performance of Global and Local routing
-  int num_sample = 1000;
   for(int i=0; i<num_sample; i++) {
-    std::cout << "round: " << i+1 << "\n";
+    if(i > 0 && i % num_sample_per_period == 0) {
+      // for a certain period, get prioritized edges
+      grid.getMaxFlow(grid.SS_global);
+      grid.getPriorityEdge();
+    }
+    std::cout << "dynamic round: " << i << "\n";
     grid.stage1();
-    grid.stage2_local_IA();
-    grid.stage2_global();
+    grid.stage2_global_dynamic();
     grid.reset(); 
   }
-  std::cout << "after another " << num_sample + 1 << " samples\n";
 
-  int num_key = grid.getMaxFlow(grid.SS_global);
- 
-  std::cout << "key amount of global routing = " << num_key << "\n";
+  Grid grid1(T, N, P, B, D); 
 
-  grid.getPriorityEdge();
+  for(int i=0; i<num_sample; i++) {
+    std::cout << "static round: " << i << "\n";
+    grid1.stage1();
+    grid1.stage2_global_static();
+    grid1.reset();
+  }
+
+  int num_key_dynamic = grid.getMaxFlow(grid.SS_global);
+  int num_key_static = grid1.getMaxFlow(grid1.SS_global);
+
+  std::cout << "key amount of dynamic global routing = " << num_key_dynamic << "\n";
+  std::cout << "key amount of static global routing = " << num_key_static << "\n";
+
 
   return 0;
 }
