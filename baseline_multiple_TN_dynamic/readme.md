@@ -31,3 +31,6 @@
   1. thoughts for dynamic local routing. in the finding 2 qubit to connect function, let's say the the prioritized user pair is
 A and T3, when X(number of neighbors) >= 3, just select the 2 qubits that are connected to the 2 neighbors with the shortest Dat3. This is the most intuitive way to do so. 
 
+- 4/6/10:25PM
+  1. dynamic local routing finish. But the result does not outperform the static a lot. Sometimes it is even worse
+  2. also, results from static local routing is around 3X worse than global routing. But in the paper it said their results are similar
