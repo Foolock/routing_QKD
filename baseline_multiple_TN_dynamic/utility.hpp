@@ -11,6 +11,7 @@
 #include <queue>
 #include <cstring>
 #include <utility>
+#include <random>
 
 /**
  *
@@ -103,6 +104,27 @@ std::vector<int> find2qubits_IA(int curr_r, int curr_c, std::vector<int> availab
     std::vector<std::vector<Node>> node_grid_per_round,
     std::vector<std::vector<Edge>> edges_per_round,
     int grid_size);
+
+/**
+ * @brief: IA algorithm - dynamic version 
+ *
+ * input:
+ *  curr_r, curr_c: index of current node
+ *  available_q: a vector storing the index of available qubits in qubits of each node
+ *  this index should be the same as the index of direction (!= -1) in directions of each node
+ *  so we can find neighbor node index through edges_per_round[curr][direction].to 
+ *  with this available_q 
+ *
+ * return:
+ *  2 qubit index indicating which 2 qubits to connect as intra link
+ *
+ */
+std::vector<int> find2qubits_IA_dynamic(int curr_r, int curr_c, std::vector<int> available_q, 
+    std::vector<std::vector<Node>> node_grid_per_round,
+    std::vector<std::vector<Edge>> edges_per_round,
+    int grid_size,
+    Grid* grid
+    );
 
 /**
  * @brief: helper: dfs, recurr from one sink(set as Alice or TN) until it meets a sink as another user node(Bob) or TN 
@@ -755,5 +777,202 @@ std::pair<std::vector<int>, int> pathToConstruct(Grid* grid, std::vector<std::ve
   return result;
 }
 
+std::vector<int> find2qubits_IA_dynamic(int curr_r, int curr_c, std::vector<int> available_q,
+    std::vector<std::vector<Node>> node_grid_per_round,
+    std::vector<std::vector<Edge>> edges_per_round,
+    int grid_size,
+    Grid* grid
+    ) {
+
+  // available_q.size = num of neighbors which should be in [3,4]
+  int num_neighbor = available_q.size();
+  if(num_neighbor < 3 || num_neighbor > 4) {
+    std::cerr << "error: number of neighbors is wrong.\n";
+    std::exit(EXIT_FAILURE);
+  }
+
+  std::vector<int> result(2, -1);
+
+  // a vector to store the index(integer) of neighbor
+  std::vector<int> neighbor;
+
+  // a vector to store the index(coordinate) of neighbor
+  std::vector<std::vector<int>> neighbor_coor;
+
+  // get the index(integer) of current node 
+  int curr = curr_r*grid_size + curr_c; 
+
+  // get the index(integer) of the 3 neighbor with inter link
+  for(int i=0; i<num_neighbor; i++) {
+    neighbor.push_back(edges_per_round[curr][available_q[i]].to);
+  }
+
+  // transform neighbors' index from integer to coordinate
+  for(int i=0; i<num_neighbor; i++) {
+    neighbor_coor.push_back(int2coordinate(neighbor[i], grid_size));
+  }
+
+
+  /*
+   * for dynamic local routing, instead of calculating the distance 
+   * between each Ti, Tj, only calculate the distance Ti, Tj pair 
+   * within the priority edges 
+   */
+  std::vector<std::vector<int>> smallest_D_neighbors; // make it a 2-D vector cuz there may be multiple smallest neighbor
+  int smallest_D; // smallest distance among all pairs
+  int smallest_D_each_pair; // smallest distance between each pair
+  int temp_D;
+  int num_D; // get the total number of D of a node 
+  if(grid->_priorityEdges.size() > 0) {
+    
+    smallest_D = INT_MAX; // smallest distance among all pairs
+    smallest_D_each_pair = INT_MAX; // smallest distance between each pair   
+    temp_D = 0;
+    num_D = node_grid_per_round[0][0].D.size(); // get the total number of D of a node(every node has the same amount) 
+
+    // priorityUsers[i] is a pair of priority user's indexs in node.D
+    std::vector<std::vector<int>> priorityUsers;  
+    for(int i=0; i<grid->_priorityEdges.size(); i++) {
+   
+      // transfer the node indices in _priorityEdges into node role representation
+      std::vector<int> user1 = int2coordinate(grid->_priorityEdges[i][0], grid_size);
+      std::vector<int> user2 = int2coordinate(grid->_priorityEdges[i][1], grid_size);
+      int role1 = node_grid_per_round[user1[0]][user1[1]].role; 
+      int role2 = node_grid_per_round[user2[0]][user2[1]].role; 
+
+      // traverse the D of a node to get the index (in D, shown as user role) of the user node pair to prioritized  
+      int index1;
+      int index2;
+      for(int i=0; i<num_D; i++) {
+        if(node_grid_per_round[0][0].D[i] == role1) {
+          index1 = i;	
+	}
+	if(node_grid_per_round[0][0].D[i] == role2) {
+          index2 = i;	
+	}
+      }
+     
+      priorityUsers.push_back({index1, index2});
+    }
+
+    /*
+     * same as dynamic global routing, everytime before we use priorityUsers, 
+     * we need to shuffle it, but let's check out the performance first to
+     * see if it is worth it.
+     * performance sucks...
+     */
+    // obtain a random seed
+    std::random_device rd;
+    
+    // create a random number engine using the seed
+    std::mt19937 eng(rd());
+    
+    // shuffle the vector using the random number engine
+    std::shuffle(priorityUsers.begin(), priorityUsers.end(), eng); 
+
+    // after getting the prioritity users, select the 2 neighbors that can give the shortest distance between
+    // priority users  
+    for(int i=0; i<num_neighbor-1; i++) {
+      for(int j=i+1; j<num_neighbor; j++) {
+        // for each pair of neighbor, get their smallest distance
+        temp_D = std::min(
+          node_grid_per_round[neighbor_coor[i][0]][neighbor_coor[i][1]].D[priorityUsers[0][1]] +
+            node_grid_per_round[neighbor_coor[j][0]][neighbor_coor[j][1]].D[priorityUsers[0][0]],
+          node_grid_per_round[neighbor_coor[i][0]][neighbor_coor[i][1]].D[priorityUsers[0][0]] +
+            node_grid_per_round[neighbor_coor[j][0]][neighbor_coor[j][1]].D[priorityUsers[0][1]]
+        );
+        if(temp_D < smallest_D_each_pair) {
+          smallest_D_each_pair = temp_D;
+        }
+        // get the smallest distance among all pairs of users
+        if(smallest_D_each_pair < smallest_D) {
+          smallest_D = smallest_D_each_pair;
+          smallest_D_neighbors.clear();
+          smallest_D_neighbors.push_back({neighbor[i], neighbor[j]});
+        }
+        else if(smallest_D_each_pair == smallest_D){
+          smallest_D_neighbors.push_back({neighbor[i], neighbor[j]});
+        }
+      }
+    }
+  }
+  else {
+
+  // for each neighbor pair, calculate Dij (distance between each Ti, Tj)
+  // select the 2 neighbor with the minimum Dij
+  smallest_D = INT_MAX; // smallest distance among all pairs
+  smallest_D_each_pair = INT_MAX; // smallest distance between each pair
+  temp_D = 0;
+  num_D = node_grid_per_round[0][0].D.size(); // get the total number of D of a node(every node has the same amount) 
+  for(int i=0; i<num_neighbor-1; i++) {
+    for(int j=i+1; j<num_neighbor; j++) {
+      // for each pair of neighbor, get their smallest distance
+      for(int k1=0; k1<num_D; k1++) {
+        for(int k2=0; k2<num_D; k2++) {
+          if(k2 != k1) {
+            temp_D = node_grid_per_round[neighbor_coor[i][0]][neighbor_coor[i][1]].D[k1] +
+                      node_grid_per_round[neighbor_coor[j][0]][neighbor_coor[j][1]].D[k2];
+            if(temp_D < smallest_D_each_pair) {
+              smallest_D_each_pair = temp_D;
+            }
+          }
+        }
+      }
+      
+      // get the smallest distance among all pairs of users
+      if(smallest_D_each_pair < smallest_D) {
+        smallest_D = smallest_D_each_pair;
+        smallest_D_neighbors.clear();
+        smallest_D_neighbors.push_back({neighbor[i], neighbor[j]});
+      }
+      else if(smallest_D_each_pair == smallest_D){
+        smallest_D_neighbors.push_back({neighbor[i], neighbor[j]});
+      }
+    }
+  }
+  }
+
+  // now smallest_D_neighbors[i] stores 2 indices of the 2 neighbor nodes to construct intra link
+  // we need to transfer it to 2 indices of the 2 qubits of current node to construct intra link
+  // traverse the neighbor of current nodes, if find that 2 neighbor, then get the direction and 
+  // get the qubit index in that direction
+  for(int i=0; i<smallest_D_neighbors.size(); i++) {
+
+    for(int direction=0; direction<4; direction++) {
+      if(edges_per_round[curr][direction].to == smallest_D_neighbors[i][0]) {
+        smallest_D_neighbors[i][0] = direction;
+      } 
+      else if(edges_per_round[curr][direction].to == smallest_D_neighbors[i][1]) {
+        smallest_D_neighbors[i][1] = direction;
+      }
+    }
+
+  }
+
+  // get the first result first
+  result = smallest_D_neighbors[0];
+
+  // then try to get the first pair in smallest_D_neighbors that can make vertical or horizontal link(if there is one)
+  for(int i=0; i<smallest_D_neighbors.size(); i++) {
+    // if the qubit index add up to 3, then it is vertical or horizontal
+    if(smallest_D_neighbors[i][0] + smallest_D_neighbors[i][1] == 3) {
+      result = smallest_D_neighbors[i];
+    }
+
+  }
+
+  // check if result is legit
+  for(int i=0; i<result.size(); i++) {
+    if(result[i] < 0 || result[i] > 3) {
+      std::cerr << "error: result of find2qubits_IA() is wrong.\n";
+      std::exit(EXIT_FAILURE);
+    }
+  }
+
+
+  return result;
+
+}
 
 #endif
+

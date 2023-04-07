@@ -31,7 +31,7 @@ int main() {
     }
     std::cout << "dynamic round: " << i << "\n";
     grid.stage1();
-    grid.stage2_global_dynamic();
+    grid.stage2_local_IA_dynamic();
     grid.reset(); 
   }
 
@@ -40,18 +40,19 @@ int main() {
   for(int i=0; i<num_sample; i++) {
     std::cout << "static round: " << i << "\n";
     grid1.stage1();
-    grid1.stage2_global_static();
+    grid1.stage2_local_IA_static();
     grid1.reset();
   }
 
-  int num_key_dynamic = grid.getMaxFlow(grid.SS_global);
-  int num_key_static = grid1.getMaxFlow(grid1.SS_global);
+  int num_key_dynamic = grid.getMaxFlow(grid.SS_local);
+  int num_key_static = grid1.getMaxFlow(grid1.SS_local);
 
-  std::cout << "key amount of dynamic global routing = " << num_key_dynamic << "\n";
-  std::cout << "key amount of static global routing = " << num_key_static << "\n";
+  std::cout << "key amount of dynamic local routing = " << num_key_dynamic << "\n";
+  std::cout << "key amount of static local routing = " << num_key_static << "\n";
 
 
   return 0;
 }
+
 
 

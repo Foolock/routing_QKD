@@ -124,8 +124,14 @@ class Grid {
      * is tie, prefer vertical or horizontal intra link
      * if 4 qubits available, connect the 2 qubits first with IA, then connect the rest 2 
      */
-    void stage2_local_IA();
-
+    void stage2_local_IA_static();
+	
+    /**
+     * @brief: dynamic version of stage 2: (local routing: IA algorithm) create intra link with a success rate = R
+     * according to the node grid from stage 1
+     */
+    void stage2_local_IA_dynamic();
+    
     /**
      * @brief: construct network flow graph and get the maximum flow value
      *  1. transform SS to RK
@@ -212,4 +218,5 @@ class Grid {
 
 
 #endif
+
 

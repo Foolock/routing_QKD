@@ -26,3 +26,8 @@
 
 - 4/5/8:00PM
   1. finish dynamic global routing. key amount can increase up to 3X with total rounds = 2000, period rounds = 500.
+
+- 4/6/12:01PM
+  1. thoughts for dynamic local routing. in the finding 2 qubit to connect function, let's say the the prioritized user pair is
+A and T3, when X(number of neighbors) >= 3, just select the 2 qubits that are connected to the 2 neighbors with the shortest Dat3. This is the most intuitive way to do so. 
+

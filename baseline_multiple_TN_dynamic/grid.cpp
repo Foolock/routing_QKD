@@ -545,7 +545,7 @@ void Grid::stage2_global_dynamic() {
  * @brief: stage 2: (local routing: IA algorithm) create intra link with a success rate = R
  * according to the node grid from stage 1
  */
-void Grid::stage2_local_IA() {
+void Grid::stage2_local_IA_static() {
 
   /*
    * first, we need to traverse the graph and calculate how many qubits are available for each node
@@ -653,6 +653,118 @@ void Grid::stage2_local_IA() {
   }
 }
 
+
+/**
+ * @brief: stage 2: (local routing: IA algorithm) create intra link with a success rate = R
+ * according to the node grid from stage 1
+ */
+void Grid::stage2_local_IA_dynamic() {
+
+  /*
+   * first, we need to traverse the graph and calculate how many qubits are available for each node
+   */
+  
+  // create a vector to store which qubits are available in qubits of the node
+  std::vector<int> available_q;
+
+  std::vector<int> connect_q;
+
+  for(int row=0; row<grid_size; row++) {
+    for(int col=0; col<grid_size; col++) {
+      // for each node in the node_grid
+
+      // empty available qubits vector first(it may have result from last itertaion
+      available_q.clear();
+
+      // traverse the qubits of node get available qubits
+      for(int i=0; i<4; i++) {
+        if(node_grid_per_round[row][col].qubits[i].available) {
+          available_q.push_back(i);
+        }
+      }
+
+      // if num == 2, connect the 2 available qubits 
+      if(available_q.size() == 2) {
+        // connect intra link between these 2 qubits
+        addIntraEdge(row, col, available_q[0], available_q[1]);
+      }
+      // if num == 3, connect the 2 qubits with min D
+      else if(available_q.size() == 3) {
+        // get the 2 qubits that needs to connect
+        connect_q = find2qubits_IA_dynamic(row, col, available_q, node_grid_per_round, edges_per_round, grid_size, this);
+           
+        // connect intra link between these 2 qubits
+        addIntraEdge(row, col, connect_q[0], connect_q[1]);
+      }
+      else if(available_q.size() == 4) {
+        // get the 2 qubits that needs to connect
+        connect_q = find2qubits_IA_dynamic(row, col, available_q, node_grid_per_round, edges_per_round, grid_size, this);
+
+        // connect intra link between these 2 qubits
+        addIntraEdge(row, col, connect_q[0], connect_q[1]);
+      
+        // also connect the 2 remaining qubits
+        std::vector<int> remain_q;
+        std::sort(available_q.begin(), available_q.end());
+        std::sort(connect_q.begin(), connect_q.end());
+        remain_q.reserve(available_q.size());
+        std::set_difference(available_q.begin(), available_q.end(), connect_q.begin(), connect_q.end(), std::back_inserter(remain_q));
+
+        addIntraEdge(row, col, remain_q[0], remain_q[1]);
+        
+      }
+    }
+  }
+
+  /*
+   * second, find paths through the connect inter and intra links
+   */
+
+  // before you find paths
+  // you need to break all the intra links of A, B, Ts in case in dfs you will stuck in loop
+  breakIntraEdge(A_index[0], A_index[1]);
+  breakIntraEdge(B_index[0], B_index[1]);
+  for(int i=0; i<T_indices.size(); i++) {
+    breakIntraEdge(T_indices[i][0], T_indices[i][1]);    
+  }
+
+  // to find the path, we can use dfs cuz the links have been fixed, i.e., we cannot make choices
+  std::vector<std::vector<int>> paths = getPathsDFS(
+      node_grid_per_round,
+      edges_per_round,
+      grid_size,
+      users, // users = index(in coordinate) of {A, T1, T2, ..., B} 
+      this
+      ); 
+
+  /*
+   * finally, push back the path length to the corresponding SS
+   */
+  for(int i=0; i<paths.size(); i++) {
+    if(paths[i].size() != 0) {
+      
+      // print the path
+      /*
+      std::cout << "found paths: \n";
+      for(int j=0; j<paths[i].size(); j++) {
+        std::cout << paths[i][j] << " -- "; 
+      }
+      std::cout << "\n\n";
+      */
+
+      int head = paths[i][0];
+      int tail = paths[i][paths[i].size() - 1];
+      std::vector<int> head_coor = int2coordinate(head, grid_size);
+      std::vector<int> tail_coor = int2coordinate(tail, grid_size);
+      int head_role = node_grid_per_round[head_coor[0]][head_coor[1]].role;
+      int tail_role = node_grid_per_round[tail_coor[0]][tail_coor[1]].role; 
+      // role: A(1), B(2), T1(3), T2(4), ....
+      // To fit into SS index, role need to -1
+      // also shortest.size() - 1 cuz it counts the number of nodes
+      SS_local[head_role-1][tail_role-1].push_back(paths[i].size()-1);
+    }
+  }
+}
 
 /**
  * @brief: construct network flow graph and get the maximum flow value
@@ -838,6 +950,7 @@ void Grid::getPriorityEdge() {
   }
 
 }
+
 
 
 
