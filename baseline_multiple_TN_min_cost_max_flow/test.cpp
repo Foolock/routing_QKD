@@ -26,12 +26,12 @@ int main() {
   for(int i=0; i<num_sample; i++) {
     if(i > 0 && i % num_sample_per_period == 0) {
       // for a certain period, get prioritized edges
-      grid.getMaxFlow(grid.SS_local);
+      grid.getMaxFlow(grid.SS_global);
       grid.getPriorityEdge();
     }
     std::cout << "dynamic round: " << i << "\n";
     grid.stage1();
-    grid.stage2_local_IA_dynamic();
+    grid.stage2_global_dynamic();
     grid.reset(); 
   }
 
@@ -40,12 +40,12 @@ int main() {
   for(int i=0; i<num_sample; i++) {
     std::cout << "static round: " << i << "\n";
     grid1.stage1();
-    grid1.stage2_local_IA_static();
+    grid1.stage2_global_static();
     grid1.reset();
   }
 
-  int num_key_dynamic = grid.getMaxFlow(grid.SS_local);
-  int num_key_static = grid1.getMaxFlow(grid1.SS_local);
+  int num_key_dynamic = grid.getMaxFlow(grid.SS_global);
+  int num_key_static = grid1.getMaxFlow(grid1.SS_global);
 
   std::cout << "key amount of dynamic local routing = " << num_key_dynamic << "\n";
   std::cout << "key amount of static local routing = " << num_key_static << "\n";

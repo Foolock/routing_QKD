@@ -34,6 +34,3 @@ A and T3, when X(number of neighbors) >= 3, just select the 2 qubits that are co
 - 4/6/10:25PM
   1. dynamic local routing finish. But the result does not outperform the static a lot. Sometimes it is even worse
   2. also, results from static local routing is around 3X worse than global routing. But in the paper it said their results are similar
-
-- 4/8/1:26PM
-  1. solve a bug in dynamic local routing. Performance is around 3X better now. Still worse than dynamic global routing but better than static global routing at most of the time. 
