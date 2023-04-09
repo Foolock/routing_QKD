@@ -131,7 +131,12 @@ class Grid {
      * according to the node grid from stage 1
      */
     void stage2_local_IA_dynamic();
-    
+
+    /**
+     * @brief: apply min cost max flow in stage 2
+     */
+    void stage2_min_cost_max_flow();
+
     /**
      * @brief: construct network flow graph and get the maximum flow value
      *  1. transform SS to RK

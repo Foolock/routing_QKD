@@ -767,6 +767,127 @@ void Grid::stage2_local_IA_dynamic() {
 }
 
 /**
+ * @brief: apply min cost max flow in stage 2
+ * This function utilize API in Google OR-Tools to solve min-cost-max-flow problem
+ */
+void Grid::stage2_min_cost_max_flow() {
+
+  /**
+   * first, we need to construct:
+   * 1. start_nodes vector
+   * 2. end_nodes vector
+   * 3. capacities vector
+   * 4. unit_costs vector 
+   * according to the graph we have in stage 1
+   */
+  
+  /*
+   * To construct vectors for min-cost-max-flow, we can use edges_per_round 
+   * cuz it stores the info of edges
+   */
+  std::vector<int> start_nodes;
+  std::vector<int> end_nodes;
+  std::vector<int> capacities;
+  std::vector<int> unit_costs;
+  std::vector<int> supplies;
+  std::vector<int> directions {1, 2, 0}; // for each node, we only need to check its right and bottom direction 
+                                      // and we can cover the whole graph
+                                      // 0: upper, 1: left, 2: right, 3: bottom
+  std::vector<int> T_indices_int; // int version of T_indices
+  for(int i=0; i<T_indices.size(); i++) {
+    T_indices_int.push_back(T_indices[i][0]*grid_size + T_indices[i][1]); 
+  }
+  for(int i=0; i<edges_per_round.size(); i++) { // edges_per_round.size() = grid_size * grid_size
+    for(auto& direction : directions) {
+      if(edges_per_round[i][direction].to != -1) { // if there is an inter link for edges_per_round[i]
+                                                   // push it and its end nodes into the vector
+        start_nodes.push_back(i);
+        end_nodes.push_back(edges_per_round[i][direction].to);
+        capacities.push_back(1); // capacity for one inter edge is 1
+        unit_costs.push_back(1); // cost per edge is 1(forward)
+
+//        // we also need to put the backward edges into vectors considering the grid is a undirected graph
+//        start_nodes.push_back(edges_per_round[i][direction].to);
+//        end_nodes.push_back(i);
+//        capacities.push_back(1); // capacity for one inter edge is 1
+//        unit_costs.push_back(1); // cost per edge is 1(backward) 
+      }
+    }
+  }
+  // additionally, traverse the start nodes, if this node is a trusted node, 
+  // we need to decrease the cost around it to make flow pass it
+  for(int i=0; i<start_nodes.size(); i++) {
+    if(std::find(T_indices_int.begin(), T_indices_int.end(), start_nodes[i]) != T_indices_int.end()) {
+      unit_costs[i] = -grid_size*2;
+    }
+  }
+  // do the same if end nodes are trusted nodes
+  for(int i=0; i<end_nodes.size(); i++) {
+    if(std::find(T_indices_int.begin(), T_indices_int.end(), end_nodes[i]) != T_indices_int.end()) {
+      unit_costs[i] = -grid_size*2;
+    }
+  }
+  // here the supply of A and the demand of B is initialized as 1 and -1
+  // if there is a solution for that, we are going to iterative increase the 
+  // supply of A and demand of B by 1 to look for more flows
+  for(int i=0; i<edges_per_round.size(); i++) {
+    if(i == A_index[0]*grid_size + A_index[1]) {
+      supplies.push_back(1); // for Alice, it can supply 4 flows at most
+    }
+    else if(i == B_index[0]*grid_size + B_index[1]) {
+      supplies.push_back(-1); // for Bob, it can demand 4 flows at most
+    }
+    /*
+     * for T nodes, the supply is not always equal to demand, 
+     * But as we always consider the final flow between A and B, so let's
+     * first assume supply = demand for T nodes and see how it performs
+     */
+    else { 
+      supplies.push_back(0);
+    }
+  }
+
+  /**
+   * second, after we get all the edges stored in a 2-D vector
+   * we need to construct the paths by these edges
+   */
+  // a 2-D array to store paths
+  std::vector<std::vector<int>> path_2D;
+  // put into solver to solve
+  path_2D = operations_research::SimpleMinCostFlowProgram(start_nodes, end_nodes, capacities, unit_costs, supplies);
+  // sort path_2D in a ascending order according to its first element
+  std::sort(path_2D.begin(), path_2D.end());
+  std::vector<int> path; // vector to store path
+  
+  // find the starting edge of the path
+  for(int i=0; i<path_2D.size(); i++) {
+    if(path_2D[i][0] == A_index[0] * grid_size + A_index[1]) {
+      path.push_back(path_2D[i][0]);
+      path.push_back(path_2D[i][1]);
+    }
+  } 
+
+  // iteratively traverse path_2D until B index is reach
+  while(path.back() != B_index[0] * grid_size + B_index[1]) {
+    int node_to_find = path.back();
+    for(int i=0; i<path_2D.size(); i++) {
+      if(path_2D[i][0] == node_to_find) {
+        path.push_back(path_2D[i][1]);
+        break; 
+      }    
+    }
+  }
+
+  // print the paths
+  std::cout << "the path is \n";
+  for(int i=0; i<path.size(); i++) {
+    std::cout << path[i] << " ";
+  }
+  std::cout << "\n";
+
+}
+
+/**
  * @brief: construct network flow graph and get the maximum flow value
  */
 int Grid::getMaxFlow(std::vector<std::vector<std::vector<int>>> SS) {

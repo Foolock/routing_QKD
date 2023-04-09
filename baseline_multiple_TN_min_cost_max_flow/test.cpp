@@ -23,6 +23,8 @@ int main() {
   grid.stage1();
   std::cout << "after stage 1: \n";
   grid.display();
+
+  grid.stage2_min_cost_max_flow();
 //
 //  std::cout << "total number of rounds: " << num_sample << "\n";
 //  std::cout << "number of rounds in one period: " << num_sample_per_period << "\n";
@@ -51,9 +53,9 @@ int main() {
 //  int num_key_dynamic = grid.getMaxFlow(grid.SS_global);
 //  int num_key_static = grid1.getMaxFlow(grid1.SS_global);
 //
-//  std::cout << "key amount of dynamic local routing = " << num_key_dynamic << "\n";
-//  std::cout << "key amount of static local routing = " << num_key_static << "\n";
-
+//  std::cout << "key amount of dynamic global routing = " << num_key_dynamic << "\n";
+//  std::cout << "key amount of static global routing = " << num_key_static << "\n";
+//
 
   return 0;
 }

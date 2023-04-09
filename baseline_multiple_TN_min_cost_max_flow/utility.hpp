@@ -16,6 +16,71 @@
 /**
  *
  *
+ * helper from ortool
+ *
+ *
+ */
+#include <cstdint>
+#include <vector>
+
+#include "ortools/graph/min_cost_flow.h"
+namespace operations_research {
+// MinCostFlow simple interface example.
+std::vector<std::vector<int>> SimpleMinCostFlowProgram(
+    const std::vector<int>& start_nodes,
+    const std::vector<int>& end_nodes,
+    const std::vector<int>& capacities,
+    const std::vector<int>& unit_costs,
+    const std::vector<int>& supplies
+    ) {
+  // Instantiate a SimpleMinCostFlow solver.
+  SimpleMinCostFlow min_cost_flow;
+
+  // Add each arc.
+  for (int i = 0; i < start_nodes.size(); ++i) {
+    int arc = min_cost_flow.AddArcWithCapacityAndUnitCost(
+        start_nodes[i], end_nodes[i], capacities[i], unit_costs[i]);
+    if (arc != i) LOG(FATAL) << "Internal error";
+  }
+
+  // Add node supplies.
+  for (int i = 0; i < supplies.size(); ++i) {
+    min_cost_flow.SetNodeSupply(i, supplies[i]);
+  }
+
+  // a 2-D vector to store paths
+  std::vector<std::vector<int>> path_2D;
+
+  // Find the min cost flow.
+  int status = min_cost_flow.Solve();
+
+  if (status == MinCostFlow::OPTIMAL) {
+    LOG(INFO) << "Minimum cost flow: " << min_cost_flow.OptimalCost();
+    LOG(INFO) << "";
+    LOG(INFO) << " Arc   Flow / Capacity  Cost";
+    for (std::size_t i = 0; i < min_cost_flow.NumArcs(); ++i) {
+      int cost = min_cost_flow.Flow(i) * min_cost_flow.UnitCost(i);
+      if(cost != 0) {
+        LOG(INFO) << min_cost_flow.Tail(i) << " -> " << min_cost_flow.Head(i)
+                  << "  " << min_cost_flow.Flow(i) << "  / "
+                  << min_cost_flow.Capacity(i) << "       " << cost;
+        path_2D.push_back({min_cost_flow.Tail(i), min_cost_flow.Head(i)}); 
+      }
+    }
+  } else {
+    LOG(INFO) << "Solving the min cost flow problem failed. Solver status: "
+              << status;
+  }
+  return path_2D;
+}
+
+}  // namespace operations_research
+
+
+
+/**
+ *
+ *
  *
  *    ////////////////function declaration/////////////////////////
  *
