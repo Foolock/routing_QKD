@@ -959,14 +959,41 @@ void Grid::stage2_min_cost_max_flow() {
     // to do this, we can do the similar thing in global routing, select a path from
     // the paths pool, mark its edges as visited, then erase it. then select the next one
     // until there is no path left
-    // the path we select does not have to be shortest as we will segment it later
-    // also because we already consider the cost so these path won't be too long
+    /*
+     * what about selecting the path with the most TNs nodes?
+     * that could be better!
+     * cuz with more TNs we have more possibility to succeed
+     * constructing the path
+     */
     std::vector<std::vector<int>> paths_filtered;
     while(paths.size()) {
       
       // get the path to process in paths pool
       std::vector<int> path_to_process = paths[0];
-   
+      int process_index = 0;
+      // calculate the number of TNs 
+      int max_TNs = 0;
+      for(int i=0; i<paths[0].size(); i++) {
+        if(std::find(T_indices_int.begin(), T_indices_int.end(), paths[0][i]) != T_indices_int.end()) {
+          max_TNs ++; 
+        }
+      }
+      
+      for (int i = 1; i < paths.size(); i++) {
+        int num_TNs = 0;
+        for(int j=0; j<paths[i].size(); j++) {
+          if(std::find(T_indices_int.begin(), T_indices_int.end(), paths[i][j]) != T_indices_int.end()) {
+            num_TNs ++;
+          }
+        }
+        if(num_TNs > max_TNs) {
+          max_TNs = num_TNs;
+          path_to_process = paths[i];
+          process_index = i;
+        }
+      }
+      
+
       // before we mark edges_per_round along the path_to_process visited
       // we need to traverse the path_to_process to see if there is any edge
       // already marked as visited(in the last iteration)
@@ -1002,7 +1029,7 @@ void Grid::stage2_min_cost_max_flow() {
    
       next_path_to_process:
         // delete this path from paths 
-        paths.erase(paths.begin() + 0);
+        paths.erase(paths.begin() + process_index);
     }
 
 //    // print the paths_filtered we found through min cost max flow solver
@@ -1014,7 +1041,7 @@ void Grid::stage2_min_cost_max_flow() {
 //      std::cout << "\n";
 //    }
 
-    // now it is time to segment our paths, or is it necessary?
+    // now it is time to segment our paths
     // all the paths starts with A, they will either pass one or multiple TNs or not
     // and they ends at B
     std::vector<std::vector<int>> paths_segs; // segments of path
@@ -1063,7 +1090,7 @@ void Grid::stage2_min_cost_max_flow() {
         // so we actually need to use edges here to make sure the changes will 
         // goes til the end round
         if(edges[edges_MCMF[i][0]][direction].to == edges_MCMF[i][1]) {
-          edges[edges_MCMF[i][0]][direction].cost += 2;
+//          edges[edges_MCMF[i][0]][direction].cost += 2;
         }
       }
     }
