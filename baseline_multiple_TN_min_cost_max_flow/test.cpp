@@ -14,32 +14,12 @@ int main() {
   double B = 0.85;
 
   double D = 0.02;
-  Grid grid(T, N, P, B, D);
 
   int num_sample = 10;
-  int num_sample_per_period = 1000;
+  int num_sample_per_period = 500;
 
+  Grid grid(T, N, P, B, D);
   grid.display();
-
-  Grid grid1(T, N, P, B, D); 
-
-  auto beg = std::chrono::steady_clock::now();
-  for(int i=0; i<num_sample; i++) {
-    if(i > 0 && i % num_sample_per_period == 0) {
-      // for a certain period, get prioritized edges
-      grid1.getMaxFlow(grid.SS_global);
-      grid1.getPriorityEdge();
-    }
-    std::cout << "dynamic round: " << i << "\n";
-    
-    grid1.stage1();
-    grid1.stage2_global_dynamic();
-    grid1.reset();
-  }
-  auto end = std::chrono::steady_clock::now();
-
-  int num_key_dynamic = grid1.getMaxFlow(grid1.SS_global);
-
   auto beg2 = std::chrono::steady_clock::now();
   for(int i=0; i<num_sample; i++) {
     std::cout << "mcmf round: " << i << "\n";
@@ -48,8 +28,23 @@ int main() {
     grid.reset(); 
   }
   auto end2 = std::chrono::steady_clock::now();
-
   int num_key_mcmf = grid.getMaxFlow(grid.SS_MCMF);
+
+  Grid grid1(T, N, P, B, D); 
+  auto beg = std::chrono::steady_clock::now();
+  for(int i=0; i<num_sample; i++) {
+    if(i > 0 && i % num_sample_per_period == 0) {
+      // for a certain period, get prioritized edges
+      grid1.getMaxFlow(grid.SS_global);
+      grid1.getPriorityEdge();
+    }
+    std::cout << "dynamic round: " << i << "\n";
+    grid1.stage1();
+    grid1.stage2_global_dynamic();
+    grid1.reset();
+  }
+  auto end = std::chrono::steady_clock::now();
+  int num_key_dynamic = grid1.getMaxFlow(grid1.SS_global);
   
   std::cout << "key amount of mcmf routing = " << num_key_mcmf << "\n";
  
@@ -62,7 +57,12 @@ int main() {
   std::cout << "time of " << num_sample << " rounds mcmf routing is: " 
             << std::chrono::duration_cast<std::chrono::microseconds>(beg2-end2).count()
             << " ms\n";
+
+  std::cout << "networkflow graph for mcmf routing: \n";
+  grid.displayNetworkGraph();
   
+  std::cout << "networkflow graph for dynamic global routing: \n";
+  grid1.displayNetworkGraph();
  
   return 0;
 }

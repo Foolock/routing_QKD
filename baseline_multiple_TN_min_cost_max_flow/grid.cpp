@@ -9,7 +9,7 @@
 /** 
  * @brief: place Alice(1), Bob(2), TNs(3,4,...) and initialize Da, Db, Dt1, Dt2, ... for each node
  */
-Grid::Grid(std::vector<std::vector<int>>& TN_locations, int N, double P, double B, double D): 
+Grid::Grid(const std::vector<std::vector<int>>& TN_locations, int N, double P, double B, double D): 
   grid_size(N), 
   T_indices(TN_locations), 
   P(P),
@@ -95,12 +95,39 @@ Grid::Grid(std::vector<std::vector<int>>& TN_locations, int N, double P, double 
     }
   }
 
+
+  std::vector<int> T_indices_int; // int version of T_indices
+  for(int i=0; i<T_indices.size(); i++) {
+    T_indices_int.push_back(T_indices[i][0]*grid_size + T_indices[i][1]);
+  }
+
+  // initialized the cost for each edge of each node
+  for(int row=0; row<grid_size; row++) {
+    for(int col=0; col<grid_size; col++) {
+      for(int k=0; k<4; k++) {
+        if(k == 0 || k == 2) { // right or up
+          if(std::find(T_indices_int.begin(), T_indices_int.end(), row*grid_size + col) != T_indices_int.end() ||
+             std::find(T_indices_int.begin(), T_indices_int.end(), temp_edges[row*grid_size + col][k].to) != T_indices_int.end()
+              ) {
+            temp_edges[row * grid_size + col][k].cost = -grid_size*100; // cost of going out upper or right 
+                                                                        // from/to TN is -grid_size*100
+          }
+          else {
+            temp_edges[row * grid_size + col][k].cost = -1; // the cost of going right or up is -1
+          }
+        }
+        else { // k == 1 || k == 3, left or bottom
+          temp_edges[row * grid_size + col][k].cost = grid_size * 2000; // the cost of going left or bottom is grid_size*100
+        }
+      } 
+    }
+  }
+
   // assign temporary objects to node_grid_per_round and edges_per_round
   node_grid_per_round = temp_node_grid;
   node_grid = node_grid_per_round;
   edges_per_round = temp_edges;
   edges = edges_per_round;
-
 
 }
 
@@ -794,9 +821,6 @@ void Grid::stage2_min_cost_max_flow() {
   std::vector<int> end_nodes;
   std::vector<int> capacities;
   std::vector<int> unit_costs;
-  std::vector<int> directions {1, 2, 0, 3}; // for each node, we only allow it to go upper, right and left to avoid 
-                                         // redundant edges in the path 
-                                         // 0: upper, 1: left, 2: right, 3: bottom
   std::vector<int> T_indices_int; // int version of T_indices
   for(int i=0; i<T_indices.size(); i++) {
     T_indices_int.push_back(T_indices[i][0]*grid_size + T_indices[i][1]); 
@@ -804,48 +828,14 @@ void Grid::stage2_min_cost_max_flow() {
   for(int i=0; i<edges_per_round.size(); i++) { // edges_per_round.size() = grid_size * grid_size
     // when it is T nodes, the cost of going out from a T nodes(from right and uppper direction)
     // should be lower(or more beneficial)
-    for(auto& direction : directions) {
+    for(int direction=0; direction<4; direction++) { // 0: upper, 1: left, 2: right, 3: bottom
       if(edges_per_round[i][direction].to != -1) { // if there is an inter link for edges_per_round[i]
                                                    // push it and its end nodes into the vector
         start_nodes.push_back(i);
         end_nodes.push_back(edges_per_round[i][direction].to);
         capacities.push_back(1); // capacity for one inter edge is 1
-        if(direction == 1 || direction == 3) {
-          unit_costs.push_back(grid_size*100); // cost going back is grid_size*100(backward)
-        }
-        else {
-          // when it is T nodes, the cost of going out from a T nodes(from right and uppper direction)
-          // should be lower(or more beneficial)
-          if(std::find(T_indices_int.begin(), T_indices_int.end(), i) != T_indices_int.end()) {
-            unit_costs.push_back(-grid_size*20); // cost going out from T nodes is -grid_size*2(forward)
-          }
-          else {
-            unit_costs.push_back(-1); // cost going out from router is -1
-          }
-        }
+        unit_costs.push_back(edges_per_round[i][direction].cost); // get the corresponding cost 
       }
-    }
-  }
-
-  /**
-   * before we call the mcmf solver in ortools, we need to consider 
-   * if there is any user pair to prioritized. 
-   * Here our way to prioritized user pair is to increase the cost of 
-   * the paths we went through in the last round(not period). So we
-   * dynamically change the cost each round instead of each period(cuz 
-   * mcmf is fast)
-   */
-  if(_edges_MCMF.size() > 0) {
-    for(int i=0; i<_edges_MCMF.size(); i++) {
-      for(int j=0; j<start_nodes.size(); j++) {
-        if(start_nodes[j] == _edges_MCMF[i][0]) {
-          for(int k=j; k<end_nodes.size(); k++) {
-            if(end_nodes[k] == _edges_MCMF[i][1]) {
-              unit_costs[k] = 1;
-            }
-          }
-        }
-      }  
     }
   }
 
@@ -903,6 +893,8 @@ void Grid::stage2_min_cost_max_flow() {
       find_solution = true;
     }
 
+    std::cout << "status: " << status << "\n";
+
     // if there is a solution for that, we are going to iterative increase the 
     // supply of A and demand of B by 1 to look for more flows
     flow_per_round ++;
@@ -919,9 +911,6 @@ void Grid::stage2_min_cost_max_flow() {
       } 
     }  
   }
-
-  // record the edges for next mcmf round
-  _edges_MCMF = edges_MCMF;
 
   /*
    * now construct the paths by these edges
@@ -966,6 +955,8 @@ void Grid::stage2_min_cost_max_flow() {
         }
       }
     }
+
+    std::cout << "paths size: " << paths.size() << "\n";
 
     // notice that after bfs, there could be multiple paths, so we need to filter out 
     // the joint path
@@ -1059,6 +1050,29 @@ void Grid::stage2_min_cost_max_flow() {
       SS_MCMF[head_role-1][tail_role-1].push_back(paths_segs[i].size()-1);
     }
   }
+
+  /**
+   * before we goes into the next round,  we need to consider 
+   * if there is any user pair to prioritized. 
+   * Here our way to prioritized user pair is to increase the cost of 
+   * the paths we went through in the last round(not period). So we
+   * dynamically change the cost each round instead of each period(cuz 
+   * mcmf is fast)
+   */
+  if(edges_MCMF.size() > 0) {
+    for(int i=0; i<edges_MCMF.size(); i++) {
+      for(int direction=0; direction<4; direction++) {
+        // found the corresponding edges in edges_per_round, and add its cost
+        // notice before each round, edges_per_round will be updated by edges
+        // so we actually need to use edges here to make sure the changes will 
+        // goes til the end round
+        if(edges[edges_MCMF[i][0]][direction].to == edges_MCMF[i][1]) {
+          edges[edges_MCMF[i][0]][direction].cost ++;
+        }
+      }
+    }
+  }
+
 }
 
 /**
@@ -1106,15 +1120,21 @@ int Grid::getMaxFlow(std::vector<std::vector<std::vector<int>>> SS) {
     }
   }
 
-  // store in class member _networkGraph for future use
-  _networkGraph = networkGraph;
-
   /*
    * finally, get maximum flow result  
    */
   result = fordFulkerson(users.size(), networkGraph, 0, 1);
 
   _key_num = result;
+
+  // before assign to _networkGraph, put row B at the end of the networkGraph 
+  for(int i=0; i<networkGraph.size(); i++) {
+    std::rotate(networkGraph[i].begin() + 1, networkGraph[i].begin() + 2, networkGraph[i].end());
+  }
+  std::rotate(networkGraph.begin() + 1, networkGraph.begin() + 2, networkGraph.end());
+
+  // store in class member _networkGraph for future use
+  _networkGraph = networkGraph;
 
   return result;
 }
@@ -1126,12 +1146,6 @@ void Grid::getPriorityEdge() {
 
   // before you get _priorityEdges, you need to reset it 
   _priorityEdges.clear();
-
-  // put row B at the end of the networkGraph 
-  for(int i=0; i<_networkGraph.size(); i++) {
-    std::rotate(_networkGraph[i].begin() + 1, _networkGraph[i].begin() + 2, _networkGraph[i].end());
-  }
-  std::rotate(_networkGraph.begin() + 1, _networkGraph.begin() + 2, _networkGraph.end());
 
   // display networkGraph
   displayNetworkGraph();  

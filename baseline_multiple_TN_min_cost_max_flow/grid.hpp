@@ -20,7 +20,7 @@ class Grid {
      *  initialize grid_size, node_grid_per_round, A_index, B_index, T_indices, edges_per_round(inter edge adjacent list)
      *  and P(success rate of fiber channel transmission
      */
-    Grid(std::vector<std::vector<int>>& TN_locations, int N, double P, double B, double D);
+    Grid(const std::vector<std::vector<int>>& TN_locations, int N, double P, double B, double D);
 
     /**
      * @brief: display the node grid
@@ -39,7 +39,6 @@ class Grid {
 
     /**
      * @brief: reset edges_per_round[] and node_grid_per_round[] as its original copy
-     *          also reset _priorityEdges
      */
     void reset();
 
@@ -217,9 +216,6 @@ class Grid {
 
     // Edges to prioritized 
     std::vector<std::vector<int>> _priorityEdges;
-
-    // a 2-D array to store edges solved from min cost max flow solver in each mcmf routing round
-    std::vector<std::vector<int>> _edges_MCMF;
 
     // final key number from A to B
     int _key_num;
