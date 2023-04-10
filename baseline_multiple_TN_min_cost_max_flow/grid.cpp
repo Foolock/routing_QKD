@@ -790,52 +790,50 @@ void Grid::stage2_min_cost_max_flow() {
   std::vector<int> capacities;
   std::vector<int> unit_costs;
   std::vector<int> supplies;
-  std::vector<int> directions {1, 2, 0}; // for each node, we only need to check its right and bottom direction 
-                                      // and we can cover the whole graph
-                                      // 0: upper, 1: left, 2: right, 3: bottom
+  std::vector<int> directions {1, 2, 0}; // for each node, we only allow it to go upper, right and left to avoid 
+                                         // redundant edges in the path 
+                                         // 0: upper, 1: left, 2: right, 3: bottom
   std::vector<int> T_indices_int; // int version of T_indices
   for(int i=0; i<T_indices.size(); i++) {
     T_indices_int.push_back(T_indices[i][0]*grid_size + T_indices[i][1]); 
   }
   for(int i=0; i<edges_per_round.size(); i++) { // edges_per_round.size() = grid_size * grid_size
+    // when it is T nodes, the cost of going out from a T nodes(from right and uppper direction)
+    // should be lower(or more beneficial)
     for(auto& direction : directions) {
       if(edges_per_round[i][direction].to != -1) { // if there is an inter link for edges_per_round[i]
                                                    // push it and its end nodes into the vector
         start_nodes.push_back(i);
         end_nodes.push_back(edges_per_round[i][direction].to);
         capacities.push_back(1); // capacity for one inter edge is 1
-        unit_costs.push_back(1); // cost per edge is 1(forward)
-
-//        // we also need to put the backward edges into vectors considering the grid is a undirected graph
-//        start_nodes.push_back(edges_per_round[i][direction].to);
-//        end_nodes.push_back(i);
-//        capacities.push_back(1); // capacity for one inter edge is 1
-//        unit_costs.push_back(1); // cost per edge is 1(backward) 
+        if(direction == 1) {
+          unit_costs.push_back(grid_size*100); // cost going back is grid_size*100(backward)
+        }
+        else {
+          // when it is T nodes, the cost of going out from a T nodes(from right and uppper direction)
+          // should be lower(or more beneficial)
+          if(std::find(T_indices_int.begin(), T_indices_int.end(), i) != T_indices_int.end()) {
+            unit_costs.push_back(-grid_size*2); // cost going out from T nodes is -grid_size*2(forward)
+          }
+          else {
+            unit_costs.push_back(-1); // cost going out from router is -1
+          }
+        }
       }
     }
   }
-  // additionally, traverse the start nodes, if this node is a trusted node, 
-  // we need to decrease the cost around it to make flow pass it
-  for(int i=0; i<start_nodes.size(); i++) {
-    if(std::find(T_indices_int.begin(), T_indices_int.end(), start_nodes[i]) != T_indices_int.end()) {
-      unit_costs[i] = -grid_size*2;
-    }
-  }
-  // do the same if end nodes are trusted nodes
-  for(int i=0; i<end_nodes.size(); i++) {
-    if(std::find(T_indices_int.begin(), T_indices_int.end(), end_nodes[i]) != T_indices_int.end()) {
-      unit_costs[i] = -grid_size*2;
-    }
-  }
+  
   // here the supply of A and the demand of B is initialized as 1 and -1
+  int flow_per_round = 2;
+
   // if there is a solution for that, we are going to iterative increase the 
   // supply of A and demand of B by 1 to look for more flows
   for(int i=0; i<edges_per_round.size(); i++) {
     if(i == A_index[0]*grid_size + A_index[1]) {
-      supplies.push_back(1); // for Alice, it can supply 4 flows at most
+      supplies.push_back(flow_per_round); // for Alice, it can supply 4 flows at most
     }
     else if(i == B_index[0]*grid_size + B_index[1]) {
-      supplies.push_back(-1); // for Bob, it can demand 4 flows at most
+      supplies.push_back(-flow_per_round); // for Bob, it can demand 4 flows at most
     }
     /*
      * for T nodes, the supply is not always equal to demand, 
@@ -851,40 +849,143 @@ void Grid::stage2_min_cost_max_flow() {
    * second, after we get all the edges stored in a 2-D vector
    * we need to construct the paths by these edges
    */
-  // a 2-D array to store paths
-  std::vector<std::vector<int>> path_2D;
-  // put into solver to solve
-  path_2D = operations_research::SimpleMinCostFlowProgram(start_nodes, end_nodes, capacities, unit_costs, supplies);
-  // sort path_2D in a ascending order according to its first element
-  std::sort(path_2D.begin(), path_2D.end());
-  std::vector<int> path; // vector to store path
+
+  // results from minCostMaxFlow solver
+  std::pair<int, std::vector<std::vector<int>>> result_MCMF;
+
+  // a 2-D array to store edges solved from min cost max flow solver
+  std::vector<std::vector<int>> edges_MCMF;
   
-  // find the starting edge of the path
-  for(int i=0; i<path_2D.size(); i++) {
-    if(path_2D[i][0] == A_index[0] * grid_size + A_index[1]) {
-      path.push_back(path_2D[i][0]);
-      path.push_back(path_2D[i][1]);
-    }
-  } 
+  // result status from minCostMaxFlow solver, 
+  // status == 1, optimal result found, status == 3, not feasible solution
+  int status;
 
-  // iteratively traverse path_2D until B index is reach
-  while(path.back() != B_index[0] * grid_size + B_index[1]) {
-    int node_to_find = path.back();
-    for(int i=0; i<path_2D.size(); i++) {
-      if(path_2D[i][0] == node_to_find) {
-        path.push_back(path_2D[i][1]);
-        break; 
-      }    
-    }
+  // put into solver to solve
+  result_MCMF = operations_research::SimpleMinCostFlowProgram(start_nodes, end_nodes, 
+      capacities, unit_costs, supplies);
+  
+  edges_MCMF = result_MCMF.second;
+  status = result_MCMF.first;
+
+  // if there are duplicate edges in edges_MCMF, there is an error
+  if(status == 1) { // if status = optimal
+    for(int i=0; i<edges_MCMF.size()-1; i++) {
+      std::vector<int> reverse_edge(edges_MCMF[i].size()); 
+      std::reverse_copy(edges_MCMF[i].begin(), edges_MCMF[i].end(), reverse_edge.begin());
+      if(std::find(edges_MCMF.begin(), edges_MCMF.end(), reverse_edge) != edges_MCMF.end()) {
+        std::cerr << "error: joint path found in min cost max flow!\n";
+        std::cerr << "the joint edge is: (" << reverse_edge[0] << ", " << reverse_edge[1] << ")\n";
+        std::exit(EXIT_FAILURE);
+      } 
+    }  
   }
 
-  // print the paths
-  std::cout << "the path is \n";
-  for(int i=0; i<path.size(); i++) {
-    std::cout << path[i] << " ";
-  }
-  std::cout << "\n";
+  /*
+   * now construct the paths by these edges
+   */
+  if(status == 1) { // all of the below is based on status == optimal
 
+    // maybe we can try bfs?
+    std::vector<std::vector<int>> paths;
+
+    // create a queue for bfs
+    // which stores the paths
+    std::queue<std::vector<int>> q;
+
+    // path vector to store the current path
+    std::vector<int> path;
+    path.push_back(A_index[0] * grid_size + A_index[1]);
+    q.push(path);
+
+    while(!q.empty()) {
+      path = q.front();
+      q.pop();
+    
+      int last = path[path.size() - 1];
+      // if last vertex is the desired destination
+      // then store this path to our paths path vector
+      if(last == B_index[0] * grid_size + B_index[1]) {
+        paths.push_back(path);
+      }
+
+      // traverse to all the nodes connected to current node 
+      // within edges_MCMF
+      // if adjacent node is not visited, 
+      // create a new path by copying the current path
+      // and add this adjacent node into the new path
+      for(int i=0; i<edges_MCMF.size(); i++) {
+        if(edges_MCMF[i][0] == last) {
+          if(!isInPath(edges_MCMF[i][1], path)) {
+            std::vector<int> newpath = path;
+            newpath.push_back(edges_MCMF[i][1]);
+            q.push(newpath);
+          }  
+        }
+      }
+    }
+
+    // notice that after bfs, there could be multiple paths, so we need to filter out 
+    // the joint path
+    // to do this, we can do the similar thing in global routing, select a path from
+    // the paths pool, mark its edges as visited, then erase it. then select the next one
+    // until there is no path left
+    // the path we select does not have to be shortest as we will segment it later
+    // also because we already consider the cost so these path won't be too long
+    std::vector<std::vector<int>> paths_filtered;
+    while(paths.size()) {
+      
+      // get the path to process in paths pool
+      std::vector<int> path_to_process = paths[0];
+   
+      // before we mark edges_per_round along the path_to_process visited
+      // we need to traverse the path_to_process to see if there is any edge
+      // already marked as visited(in the last iteration)
+      for(int i=0; i<path_to_process.size(); i++) {
+        for(int j=0; j<4; j++) { // 0 <= direction <= 3
+          if(edges_per_round[path_to_process[i]][j].to == path_to_process[i+1]) {
+          if(edges_per_round[path_to_process[i]][j].visited == true) {
+            // if this path has visited edges
+            // i.e., we have disjoint paths
+            // skip it
+            goto next_path_to_process;
+          }
+          }
+        }
+      } 
+    
+      // mark the edges_per_round along the path_to_process path visited
+      // the path stores node's index(integer), so we need to find the edge first
+      for(int i=0; i<path_to_process.size() - 1; i++) {
+        // edges_per_round[path_to_process[i]][direction].visited = true
+        // we have path_to_process[i], what is the direction?
+        // it is the one when edges_per_round[path_to_process[i]][direction].to = path_to_process[i+1] 
+        for(int j=0; j<4; j++) { // 0 <= direction <= 3
+          if(edges_per_round[path_to_process[i]][j].to == path_to_process[i+1]) {
+            edges_per_round[path_to_process[i]][j].visited = true;
+            edges_per_round[path_to_process[i+1]][3-j].visited = true; // we need to mark for its neighbor too
+          }  
+        }
+      }
+
+      // before erase, put the disjoint path into paths_filtered
+      paths_filtered.push_back(path_to_process);
+   
+      next_path_to_process:
+        // delete this path from paths 
+        paths.erase(paths.begin() + 0);
+    }
+
+    // print the paths_filtered we found through min cost max flow solver
+    std::cout << "paths_filtered: \n";
+    for(int i=0; i<paths_filtered.size(); i++) {
+      for(int j=0; j<paths_filtered[i].size(); j++) {
+        std::cout << paths_filtered[i][j] << " -- ";
+      } 
+      std::cout << "\n";
+    }
+
+    // now it is time to segment our paths, or is it necessary?
+  }
 }
 
 /**

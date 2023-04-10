@@ -26,13 +26,15 @@
 #include "ortools/graph/min_cost_flow.h"
 namespace operations_research {
 // MinCostFlow simple interface example.
-std::vector<std::vector<int>> SimpleMinCostFlowProgram(
+std::pair<int, std::vector<std::vector<int>>> SimpleMinCostFlowProgram(
     const std::vector<int>& start_nodes,
     const std::vector<int>& end_nodes,
     const std::vector<int>& capacities,
     const std::vector<int>& unit_costs,
     const std::vector<int>& supplies
     ) {
+  std::pair<int, std::vector<std::vector<int>>> results; // result = {status, paths_2D}
+
   // Instantiate a SimpleMinCostFlow solver.
   SimpleMinCostFlow min_cost_flow;
 
@@ -48,8 +50,8 @@ std::vector<std::vector<int>> SimpleMinCostFlowProgram(
     min_cost_flow.SetNodeSupply(i, supplies[i]);
   }
 
-  // a 2-D vector to store paths
-  std::vector<std::vector<int>> path_2D;
+  // a 2-D vector to store edges from min cost max flow solver
+  std::vector<std::vector<int>> edges_MCMF;
 
   // Find the min cost flow.
   int status = min_cost_flow.Solve();
@@ -64,14 +66,15 @@ std::vector<std::vector<int>> SimpleMinCostFlowProgram(
         LOG(INFO) << min_cost_flow.Tail(i) << " -> " << min_cost_flow.Head(i)
                   << "  " << min_cost_flow.Flow(i) << "  / "
                   << min_cost_flow.Capacity(i) << "       " << cost;
-        path_2D.push_back({min_cost_flow.Tail(i), min_cost_flow.Head(i)}); 
+        edges_MCMF.push_back({min_cost_flow.Tail(i), min_cost_flow.Head(i)}); 
       }
     }
   } else {
     LOG(INFO) << "Solving the min cost flow problem failed. Solver status: "
               << status;
   }
-  return path_2D;
+  results = std::make_pair(status, edges_MCMF);
+  return results;
 }
 
 }  // namespace operations_research
