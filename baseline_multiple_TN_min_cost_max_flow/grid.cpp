@@ -109,7 +109,7 @@ Grid::Grid(const std::vector<std::vector<int>>& TN_locations, int N, double P, d
           if(std::find(T_indices_int.begin(), T_indices_int.end(), row*grid_size + col) != T_indices_int.end() ||
              std::find(T_indices_int.begin(), T_indices_int.end(), temp_edges[row*grid_size + col][k].to) != T_indices_int.end()
               ) {
-            temp_edges[row * grid_size + col][k].cost = -grid_size*100; // cost of going out upper or right 
+            temp_edges[row * grid_size + col][k].cost = -grid_size*10000 - 1; // cost of going out upper or right 
                                                                         // from/to TN is -grid_size*100
           }
           else {
@@ -117,7 +117,7 @@ Grid::Grid(const std::vector<std::vector<int>>& TN_locations, int N, double P, d
           }
         }
         else { // k == 1 || k == 3, left or bottom
-          temp_edges[row * grid_size + col][k].cost = grid_size * 2000; // the cost of going left or bottom is grid_size*100
+          temp_edges[row * grid_size + col][k].cost = grid_size * 20000; // the cost of going left or bottom is grid_size*100
         }
       } 
     }
@@ -829,7 +829,7 @@ void Grid::stage2_min_cost_max_flow() {
     // when it is T nodes, the cost of going out from a T nodes(from right and uppper direction)
     // should be lower(or more beneficial)
     for(int direction=0; direction<4; direction++) { // 0: upper, 1: left, 2: right, 3: bottom
-      if(edges_per_round[i][direction].to != -1) { // if there is an inter link for edges_per_round[i]
+      if(edges_per_round[i][direction].to != -1 && direction != 3 && direction != 1) { // if there is an inter link for edges_per_round[i]
                                                    // push it and its end nodes into the vector
         start_nodes.push_back(i);
         end_nodes.push_back(edges_per_round[i][direction].to);
@@ -893,8 +893,6 @@ void Grid::stage2_min_cost_max_flow() {
       find_solution = true;
     }
 
-    std::cout << "status: " << status << "\n";
-
     // if there is a solution for that, we are going to iterative increase the 
     // supply of A and demand of B by 1 to look for more flows
     flow_per_round ++;
@@ -955,8 +953,6 @@ void Grid::stage2_min_cost_max_flow() {
         }
       }
     }
-
-    std::cout << "paths size: " << paths.size() << "\n";
 
     // notice that after bfs, there could be multiple paths, so we need to filter out 
     // the joint path
@@ -1067,7 +1063,7 @@ void Grid::stage2_min_cost_max_flow() {
         // so we actually need to use edges here to make sure the changes will 
         // goes til the end round
         if(edges[edges_MCMF[i][0]][direction].to == edges_MCMF[i][1]) {
-          edges[edges_MCMF[i][0]][direction].cost ++;
+          edges[edges_MCMF[i][0]][direction].cost += 2;
         }
       }
     }
