@@ -794,7 +794,7 @@ void Grid::stage2_min_cost_max_flow() {
   std::vector<int> end_nodes;
   std::vector<int> capacities;
   std::vector<int> unit_costs;
-  std::vector<int> directions {1, 2, 0}; // for each node, we only allow it to go upper, right and left to avoid 
+  std::vector<int> directions {1, 2, 0, 3}; // for each node, we only allow it to go upper, right and left to avoid 
                                          // redundant edges in the path 
                                          // 0: upper, 1: left, 2: right, 3: bottom
   std::vector<int> T_indices_int; // int version of T_indices
@@ -810,14 +810,14 @@ void Grid::stage2_min_cost_max_flow() {
         start_nodes.push_back(i);
         end_nodes.push_back(edges_per_round[i][direction].to);
         capacities.push_back(1); // capacity for one inter edge is 1
-        if(direction == 1) {
+        if(direction == 1 || direction == 3) {
           unit_costs.push_back(grid_size*100); // cost going back is grid_size*100(backward)
         }
         else {
           // when it is T nodes, the cost of going out from a T nodes(from right and uppper direction)
           // should be lower(or more beneficial)
           if(std::find(T_indices_int.begin(), T_indices_int.end(), i) != T_indices_int.end()) {
-            unit_costs.push_back(-grid_size*2); // cost going out from T nodes is -grid_size*2(forward)
+            unit_costs.push_back(-grid_size*20); // cost going out from T nodes is -grid_size*2(forward)
           }
           else {
             unit_costs.push_back(-1); // cost going out from router is -1
@@ -828,7 +828,30 @@ void Grid::stage2_min_cost_max_flow() {
   }
 
   /**
-   * second, after we get all the edges stored in a 2-D vector
+   * before we call the mcmf solver in ortools, we need to consider 
+   * if there is any user pair to prioritized. 
+   * Here our way to prioritized user pair is to increase the cost of 
+   * the paths we went through in the last round(not period). So we
+   * dynamically change the cost each round instead of each period(cuz 
+   * mcmf is fast)
+   */
+  if(_edges_MCMF.size() > 0) {
+    for(int i=0; i<_edges_MCMF.size(); i++) {
+      for(int j=0; j<start_nodes.size(); j++) {
+        if(start_nodes[j] == _edges_MCMF[i][0]) {
+          for(int k=j; k<end_nodes.size(); k++) {
+            if(end_nodes[k] == _edges_MCMF[i][1]) {
+              unit_costs[k] = 1;
+            }
+          }
+        }
+      }  
+    }
+  }
+
+  /**
+   * second, we call the mcmf solver in ortools
+   * after we get all the edges stored in a 2-D vector
    * we need to construct the paths by these edges
    * 
    * here the supply vector is to-be decided cuz we will need to obtain the best supply 
@@ -896,6 +919,9 @@ void Grid::stage2_min_cost_max_flow() {
       } 
     }  
   }
+
+  // record the edges for next mcmf round
+  _edges_MCMF = edges_MCMF;
 
   /*
    * now construct the paths by these edges

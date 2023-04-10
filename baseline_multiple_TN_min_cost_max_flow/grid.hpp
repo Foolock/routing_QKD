@@ -218,6 +218,9 @@ class Grid {
     // Edges to prioritized 
     std::vector<std::vector<int>> _priorityEdges;
 
+    // a 2-D array to store edges solved from min cost max flow solver in each mcmf routing round
+    std::vector<std::vector<int>> _edges_MCMF;
+
     // final key number from A to B
     int _key_num;
 };
