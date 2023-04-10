@@ -57,21 +57,21 @@ std::pair<int, std::vector<std::vector<int>>> SimpleMinCostFlowProgram(
   int status = min_cost_flow.Solve();
 
   if (status == MinCostFlow::OPTIMAL) {
-    LOG(INFO) << "Minimum cost flow: " << min_cost_flow.OptimalCost();
-    LOG(INFO) << "";
-    LOG(INFO) << " Arc   Flow / Capacity  Cost";
+//    LOG(INFO) << "Minimum cost flow: " << min_cost_flow.OptimalCost();
+//    LOG(INFO) << "";
+//    LOG(INFO) << " Arc   Flow / Capacity  Cost";
     for (std::size_t i = 0; i < min_cost_flow.NumArcs(); ++i) {
       int cost = min_cost_flow.Flow(i) * min_cost_flow.UnitCost(i);
       if(cost != 0) {
-        LOG(INFO) << min_cost_flow.Tail(i) << " -> " << min_cost_flow.Head(i)
-                  << "  " << min_cost_flow.Flow(i) << "  / "
-                  << min_cost_flow.Capacity(i) << "       " << cost;
+//        LOG(INFO) << min_cost_flow.Tail(i) << " -> " << min_cost_flow.Head(i)
+//                  << "  " << min_cost_flow.Flow(i) << "  / "
+//                  << min_cost_flow.Capacity(i) << "       " << cost;
         edges_MCMF.push_back({min_cost_flow.Tail(i), min_cost_flow.Head(i)}); 
       }
     }
   } else {
-    LOG(INFO) << "Solving the min cost flow problem failed. Solver status: "
-              << status;
+//    LOG(INFO) << "Solving the min cost flow problem failed. Solver status: "
+//              << status;
   }
   results = std::make_pair(status, edges_MCMF);
   return results;
@@ -246,6 +246,11 @@ void shortestPathFaster(const std::vector<std::vector<int>>& graph, int S, int V
  *
  */
 std::pair<std::vector<int>, int> pathToConstruct(Grid* grid, std::vector<std::vector<int>> global_paths);
+
+/**
+ * @brief: segment a 1-D vector storing the paths according to some router nodes(TN)
+ */
+std::vector<std::vector<int>> segmentPath(const std::vector<int>& path, const std::vector<int> TNs);
 
 /**
  *
@@ -1040,6 +1045,54 @@ std::vector<int> find2qubits_IA_dynamic(int curr_r, int curr_c, std::vector<int>
 
   return result;
 
+}
+
+/**
+ * @brief: segment a 1-D vector storing the paths according to one router nodes(TN)
+ */
+std::vector<std::vector<int>> segmentPath(const std::vector<int>& path, const std::vector<int> TNs) {
+  
+  std::vector<std::vector<int>> results; 
+
+  bool found_TN {false};
+
+  // for each TN in TNs, traverse the path to see if it exists, if so 
+  // mark down their indices in the path
+  std::vector<int> TN_indices_in_path;
+  for(int i=0; i<path.size(); i++) {
+    for(int j=0; j<TNs.size(); j++) {
+      if(TNs[j] == path[i]) {
+        TN_indices_in_path.push_back(i);
+        found_TN = true;
+      } 
+    }
+  }
+  
+  if(!found_TN) {
+    results.push_back(path);
+  }
+  else {
+    // sort TN_indices
+    std::sort(TN_indices_in_path.begin(), TN_indices_in_path.end());
+
+    int start = 0;
+    std::vector<int> segment;
+    for (int index : TN_indices_in_path) {
+        if(start != 0) {
+          segment = std::vector<int>(path.begin() + start - 1, path.begin() + index + 1);
+        }
+        else {
+          segment = std::vector<int>(path.begin() + start, path.begin() + index + 1);
+        }
+        results.push_back(segment);
+        start = index + 1;
+    }
+    segment = std::vector<int>(path.begin() + start - 1, path.end());
+    results.push_back(segment);
+  }
+  
+
+  return results;
 }
 
 #endif

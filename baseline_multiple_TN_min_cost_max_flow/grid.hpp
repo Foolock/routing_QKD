@@ -194,6 +194,7 @@ class Grid {
     // storing format(1st dimension): A, B, T1, T2, T3, ... 
     std::vector<std::vector<std::vector<int>>> SS_global; // SS_global will be assigned in stage 2 global  
     std::vector<std::vector<std::vector<int>>> SS_local; // SS_local will be assigned in stage 2 local 
+    std::vector<std::vector<std::vector<int>>> SS_MCMF; // SS_MCMF will be assigned in stage 2 min_cost_max_flow  
 
     // raw key pool
     // for RK[i][j], the 1st dimension of SS stands for the Ti,

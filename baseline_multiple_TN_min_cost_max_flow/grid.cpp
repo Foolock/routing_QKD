@@ -51,6 +51,11 @@ Grid::Grid(std::vector<std::vector<int>>& TN_locations, int N, double P, double 
   for(auto& row : SS_local) {
     row.resize(users.size());
   }
+ 
+  SS_MCMF.resize(users.size());
+  for(auto& row : SS_MCMF) {
+    row.resize(users.size());
+  }
 
   // also initialize size of RK, SK
   RK.resize(users.size());
@@ -789,7 +794,6 @@ void Grid::stage2_min_cost_max_flow() {
   std::vector<int> end_nodes;
   std::vector<int> capacities;
   std::vector<int> unit_costs;
-  std::vector<int> supplies;
   std::vector<int> directions {1, 2, 0}; // for each node, we only allow it to go upper, right and left to avoid 
                                          // redundant edges in the path 
                                          // 0: upper, 1: left, 2: right, 3: bottom
@@ -822,53 +826,66 @@ void Grid::stage2_min_cost_max_flow() {
       }
     }
   }
-  
-  // here the supply of A and the demand of B is initialized as 1 and -1
-  int flow_per_round = 2;
-
-  // if there is a solution for that, we are going to iterative increase the 
-  // supply of A and demand of B by 1 to look for more flows
-  for(int i=0; i<edges_per_round.size(); i++) {
-    if(i == A_index[0]*grid_size + A_index[1]) {
-      supplies.push_back(flow_per_round); // for Alice, it can supply 4 flows at most
-    }
-    else if(i == B_index[0]*grid_size + B_index[1]) {
-      supplies.push_back(-flow_per_round); // for Bob, it can demand 4 flows at most
-    }
-    /*
-     * for T nodes, the supply is not always equal to demand, 
-     * But as we always consider the final flow between A and B, so let's
-     * first assume supply = demand for T nodes and see how it performs
-     */
-    else { 
-      supplies.push_back(0);
-    }
-  }
 
   /**
    * second, after we get all the edges stored in a 2-D vector
    * we need to construct the paths by these edges
+   * 
+   * here the supply vector is to-be decided cuz we will need to obtain the best supply 
+   * according to status of the solver
    */
 
-  // results from minCostMaxFlow solver
-  std::pair<int, std::vector<std::vector<int>>> result_MCMF;
-
-  // a 2-D array to store edges solved from min cost max flow solver
-  std::vector<std::vector<int>> edges_MCMF;
-  
+  // here the supply of A and the demand of B is initialized as 1 and -1
+  int flow_per_round = 1;
   // result status from minCostMaxFlow solver, 
   // status == 1, optimal result found, status == 3, not feasible solution
-  int status;
+  int status = 0;
+  // a 2-D array to store edges solved from min cost max flow solver
+  std::vector<std::vector<int>> temp_edges_MCMF;
+  std::vector<std::vector<int>> edges_MCMF;
+  bool find_solution {false}; 
 
-  // put into solver to solve
-  result_MCMF = operations_research::SimpleMinCostFlowProgram(start_nodes, end_nodes, 
-      capacities, unit_costs, supplies);
-  
-  edges_MCMF = result_MCMF.second;
-  status = result_MCMF.first;
+  while(status != 3) {
+    
+    std::vector<int> supplies;
+    for(int i=0; i<edges_per_round.size(); i++) {
+      if(i == A_index[0]*grid_size + A_index[1]) {
+        supplies.push_back(flow_per_round); // for Alice, it can supply 4 flows at most
+      }
+      else if(i == B_index[0]*grid_size + B_index[1]) {
+        supplies.push_back(-flow_per_round); // for Bob, it can demand 4 flows at most
+      }
+      /*
+       * for T nodes, the supply is not always equal to demand, 
+       * But as we always consider the final flow between A and B, so let's
+       * first assume supply = demand for T nodes and see how it performs
+       */
+      else { 
+        supplies.push_back(0);
+      }
+    }
 
+    // results from minCostMaxFlow solver
+    std::pair<int, std::vector<std::vector<int>>> result_MCMF;
+
+    // put into solver to solve
+    result_MCMF = operations_research::SimpleMinCostFlowProgram(start_nodes, end_nodes, 
+        capacities, unit_costs, supplies);
+    
+    temp_edges_MCMF = result_MCMF.second;
+    status = result_MCMF.first;
+ 
+    if(status == 1) { // if the result is optimal, store it.
+      edges_MCMF = temp_edges_MCMF;
+      find_solution = true;
+    }
+
+    // if there is a solution for that, we are going to iterative increase the 
+    // supply of A and demand of B by 1 to look for more flows
+    flow_per_round ++;
+  }
   // if there are duplicate edges in edges_MCMF, there is an error
-  if(status == 1) { // if status = optimal
+  if(edges_MCMF.size()) { // if status = optimal
     for(int i=0; i<edges_MCMF.size()-1; i++) {
       std::vector<int> reverse_edge(edges_MCMF[i].size()); 
       std::reverse_copy(edges_MCMF[i].begin(), edges_MCMF[i].end(), reverse_edge.begin());
@@ -883,7 +900,7 @@ void Grid::stage2_min_cost_max_flow() {
   /*
    * now construct the paths by these edges
    */
-  if(status == 1) { // all of the below is based on status == optimal
+  if(find_solution) { // all of the below is based on we found a solution
 
     // maybe we can try bfs?
     std::vector<std::vector<int>> paths;
@@ -975,16 +992,46 @@ void Grid::stage2_min_cost_max_flow() {
         paths.erase(paths.begin() + 0);
     }
 
-    // print the paths_filtered we found through min cost max flow solver
-    std::cout << "paths_filtered: \n";
-    for(int i=0; i<paths_filtered.size(); i++) {
-      for(int j=0; j<paths_filtered[i].size(); j++) {
-        std::cout << paths_filtered[i][j] << " -- ";
-      } 
-      std::cout << "\n";
-    }
+//    // print the paths_filtered we found through min cost max flow solver
+//    std::cout << "paths_filtered: \n";
+//    for(int i=0; i<paths_filtered.size(); i++) {
+//      for(int j=0; j<paths_filtered[i].size(); j++) {
+//        std::cout << paths_filtered[i][j] << " -- ";
+//      } 
+//      std::cout << "\n";
+//    }
 
     // now it is time to segment our paths, or is it necessary?
+    // all the paths starts with A, they will either pass one or multiple TNs or not
+    // and they ends at B
+    std::vector<std::vector<int>> paths_segs; // segments of path
+    for(int i=0; i<paths_filtered.size(); i++) {
+      std::vector<std::vector<int>> temp = segmentPath(paths_filtered[i], T_indices_int);
+      paths_segs.reserve(paths_segs.size() + temp.size());
+      paths_segs.insert(paths_segs.end(), temp.begin(), temp.end());   
+    }
+
+//    // print the paths_segs we found through min cost max flow solver
+//    std::cout << "paths_segs: \n";
+//    for(int i=0; i<paths_segs.size(); i++) {
+//      for(int j=0; j<paths_segs[i].size(); j++) {
+//        std::cout << paths_segs[i][j] << " -- ";
+//      } 
+//      std::cout << "\n";
+//    } 
+  
+    // once everything is done, put it into the corresponding SS
+  
+    for(int i=0; i<paths_segs.size(); i++) {
+      // for each path in paths_segs, get the role of source and sink node in the paths_segs[i] path
+      int head = paths_segs[i][0];
+      int tail = paths_segs[i][paths_segs[i].size() - 1];
+      std::vector<int> head_coor = int2coordinate(head, grid_size);
+      std::vector<int> tail_coor = int2coordinate(tail, grid_size);
+      int head_role = node_grid_per_round[head_coor[0]][head_coor[1]].role; 
+      int tail_role = node_grid_per_round[tail_coor[0]][tail_coor[1]].role; 
+      SS_MCMF[head_role-1][tail_role-1].push_back(paths_segs[i].size()-1);
+    }
   }
 }
 
